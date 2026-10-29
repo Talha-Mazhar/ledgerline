@@ -6,12 +6,18 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * A PostgreSQL container for tests. {@code @ServiceConnection} hands its URL and credentials to
+ * Spring Boot, so no datasource settings are needed. The image matches {@code infra/compose.yaml}.
+ */
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
+
+    static final DockerImageName POSTGRES_IMAGE = DockerImageName.parse("postgres:18-alpine");
 
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:latest"));
+        return new PostgreSQLContainer(POSTGRES_IMAGE);
     }
 }
