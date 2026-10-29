@@ -19,7 +19,6 @@
     /* Strict typing */
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -30,9 +29,7 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Import alias: '@/features/...' instead of '../../../features/...' */
-    "paths": { "@/*": ["./src/*"] },
-
-    "include": ["vite.config.ts", "openapi-ts.config.ts"]
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"]
 }
