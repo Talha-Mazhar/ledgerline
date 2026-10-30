@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# Ledgerline web app
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19, TypeScript (strict), Vite, MUI, TanStack Query and React Router.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm run dev          # http://localhost:5173, /api is proxied to the backend on :8080
+npm run check        # typecheck, lint, format check, tests: what CI runs
+npm run build        # production build in dist/
+npm run api:generate # regenerate src/shared/api/generated from ../api/openapi.yaml
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Structure
+
+```
+src/
+├── app/           the shell: providers, routes, theme, layout, error pages
+├── features/      one folder per feature (overview, wallets, transfers, ...)
+├── shared/        code used by several features
+│   ├── api/       generated from the OpenAPI contract, never edited by hand
+│   ├── config/    route paths and other constants
+│   └── ui/        reusable components built on MUI
+└── test/          test setup and helpers
+```
+
+A feature may import from `shared/` and `app/`; features never import from each other. If
+two features need the same thing, it moves to `shared/`.
+
+## Rules
+
+- No `any`. Untrusted data (API responses, `JSON.parse`, thrown errors) is `unknown` and is
+  narrowed before use. The linter enforces this.
+- Server data lives in TanStack Query, not in component state or a global store.
+- Every route path comes from `shared/config/paths.ts`.
+- Tests render the real routes with `renderRoute()` and query by role and label, the way a
+  user finds things.
