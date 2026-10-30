@@ -4,6 +4,12 @@
  */
 export const paths = {
   overview: '/',
+  wallet: '/wallets/:walletId',
 } as const;
 
 export type AppPath = (typeof paths)[keyof typeof paths];
+
+/** The URL of one wallet's page. */
+export function walletPath(walletId: string): string {
+  return paths.wallet.replace(':walletId', encodeURIComponent(walletId));
+}

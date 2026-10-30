@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: Ledgerline API
+  version: 0.1.0
+  description: |
+    The contract between the Ledgerline backend and its clients. The frontend generates its types and
+    client from this file, and the backend's tests check every response against it.
+
+    Errors use RFC 9457 problem details (`application/problem+json`). Amounts are decimal strings,
+    never floating-point numbers.
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Wallets
+    description: One wallet per currency for the signed-in user.
+
+paths:
+  /wallets:
+    get:
+      tags: [Wallets]
+      operationId: listWallets
+      summary: List the user's wallets
+      responses:
+        '200':
+          description: The user's wallets, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletList'
+    post:
+      tags: [Wallets]
+      operationId: openWallet
+      summary: Open a wallet in a currency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenWalletRequest'
+      responses:
+        '201':
+          description: The wallet was opened with a zero balance.
+          headers:
+            Location:
+              description: URL of the new wallet.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: The user already has a wallet in this currency.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /wallets/{walletId}:
+    parameters:
+      - name: walletId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Wallets]
+      operationId: getWallet
+      summary: Get one wallet
+      responses:
+        '200':
+          description: The wallet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: The user has no wallet with this id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  responses:
+    BadRequest:
+      description: The request is malformed, for example an unknown currency or an invalid id.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    CurrencyCode:
+      type: string
+      description: ISO 4217 code of a currency Ledgerline supports.
+      enum: [EUR, USD, CZK, GBP]
+
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: string
+          description: Decimal amount with exactly two decimal places, e.g. "1250.00".
+          pattern: '^-?\d+\.\d{2}$'
+          example: '1250.00'
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+
+    WalletStatus:
+      type: string
+      enum: [ACTIVE]
+
+    Wallet:
+      type: object
+      required: [id, currency, balance, status, openedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        balance:
+          $ref: '#/components/schemas/Money'
+        status:
+          $ref: '#/components/schemas/WalletStatus'
+        openedAt:
+          type: string
+          format: date-time
+
+    WalletList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Wallet'
+
+    OpenWalletRequest:
+      type: object
+      required: [currency]
+      properties:
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
