@@ -228,5 +228,22 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <!--
+            palantir-java-format reads javac internals that JDK 27 removed, so Spotless can't run
+            there yet (palantir/palantir-java-format#1785). On JDK 27+ the format check is skipped;
+            CI runs on JDK 25 and still enforces it. Format locally with JDK 25:
+            JAVA_HOME=$(/usr/libexec/java_home -v 25) ./mvnw spotless:apply
+        -->
+        <profile>
+            <id>format-check-unsupported-jdk</id>
+            <activation>
+                <jdk>[27,)</jdk>
+            </activation>
+            <properties>
+                <spotless.check.skip>true</spotless.check.skip>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
