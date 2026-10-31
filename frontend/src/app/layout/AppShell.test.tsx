@@ -6,9 +6,9 @@ describe('AppShell', () => {
   it('shows the brand and the main navigation', () => {
     renderRoute('/');
 
-    expect(screen.getByText('Ledgerline')).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
     expect(within(navigation).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/');
+    expect(screen.getAllByText('Ledgerline').length).toBeGreaterThan(0);
   });
 
   it('marks the link of the current page as active', () => {

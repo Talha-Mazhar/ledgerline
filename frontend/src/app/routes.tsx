@@ -3,6 +3,7 @@ import { AppShell } from '@/app/layout/AppShell';
 import { NotFoundPage } from '@/app/errors/NotFoundPage';
 import { RouteErrorPage } from '@/app/errors/RouteErrorPage';
 import { OverviewPage } from '@/features/overview/OverviewPage';
+import { WalletDetailPage } from '@/features/wallets/WalletDetailPage';
 import { paths } from '@/shared/config/paths';
 
 /**
@@ -16,6 +17,7 @@ export const routes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <OverviewPage /> },
+      { path: paths.wallet, element: <WalletDetailPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

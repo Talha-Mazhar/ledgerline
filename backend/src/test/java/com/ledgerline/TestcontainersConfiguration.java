@@ -9,9 +9,11 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * A PostgreSQL container for tests. {@code @ServiceConnection} hands its URL and credentials to
  * Spring Boot, so no datasource settings are needed. The image matches {@code infra/compose.yaml}.
+ *
+ * <p>Public so that tests in module packages (e.g. {@code com.ledgerline.wallets}) can import it.
  */
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
     static final DockerImageName POSTGRES_IMAGE = DockerImageName.parse("postgres:18-alpine");
 

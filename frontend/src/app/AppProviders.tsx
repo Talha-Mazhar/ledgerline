@@ -23,7 +23,7 @@ export function AppProviders({ children, queryClient }: AppProvidersProps) {
       <QueryClientProvider client={client}>
         {children}
         {/* Left out of production builds by the package itself. */}
-        <ReactQueryDevtools buttonPosition="bottom-left" />
+        <ReactQueryDevtools buttonPosition="bottom-right" />
       </QueryClientProvider>
     </ThemeProvider>
   );

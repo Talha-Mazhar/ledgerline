@@ -40,8 +40,20 @@ cd backend && ./mvnw verify     # compile with null checks, tests, formatting
 cd frontend && npm run check    # types, lint, formatting, tests
 ```
 
+## The API
+
+`api/openapi.yaml` is the contract between backend and frontend. Change it
+first, then:
+
+```bash
+cd frontend && npm run api:generate   # regenerate the typed client
+cd backend && ./mvnw verify           # the API tests check responses against it
+```
+
 ## Decisions
 
 - [0001 Backend as a modular monolith](docs/adr/0001-modular-monolith.md)
 - [0002 Null safety checked at compile time](docs/adr/0002-null-safety.md)
 - [0003 Feature-based frontend structure](docs/adr/0003-frontend-structure.md)
+- [0004 Contract-first API, checked on both sides](docs/adr/0004-contract-first-api.md)
+- [0005 Wallets: ownership, balances and identity before sign-in](docs/adr/0005-wallets-design.md)

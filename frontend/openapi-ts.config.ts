@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [
     '@hey-api/client-fetch',
     '@hey-api/typescript',
-    '@hey-api/sdk',
+    // validator: every response is checked against the contract's zod schemas at runtime, so a
+    // backend that drifts from openapi.yaml fails loudly instead of rendering wrong numbers.
+    { name: '@hey-api/sdk', validator: true },
     'zod',
     '@tanstack/react-query',
   ],
