@@ -1,8 +1,8 @@
 package com.ledgerline.payments;
 
-import com.ledgerline.MoneyResponse;
 import com.ledgerline.identity.CurrentUser;
 import com.ledgerline.wallets.ActivityItemResponse;
+import com.ledgerline.wallets.MoneyResponse;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

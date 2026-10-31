@@ -1,6 +1,5 @@
 package com.ledgerline.wallets;
 
-import com.ledgerline.MoneyResponse;
 import com.ledgerline.ledger.StatementLine;
 import java.time.Instant;
 import java.util.UUID;

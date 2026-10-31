@@ -1,6 +1,5 @@
 package com.ledgerline.wallets;
 
-import com.ledgerline.MoneyResponse;
 import com.ledgerline.ledger.CurrencyCode;
 import com.ledgerline.ledger.Money;
 import java.time.Instant;
