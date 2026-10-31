@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatMoney } from '@/shared/money/format';
+import { formatDate, formatMoney, formatSignedMoney } from '@/shared/money/format';
 
 describe('formatMoney', () => {
   it('formats each supported currency with its symbol', () => {
@@ -20,6 +20,13 @@ describe('formatMoney', () => {
 
   it('shows negative amounts with a minus sign', () => {
     expect(formatMoney({ amount: '-5.00', currency: 'EUR' })).toBe('-€5.00');
+  });
+});
+
+describe('formatSignedMoney', () => {
+  it('marks money in with a plus sign and money out with a minus sign', () => {
+    expect(formatSignedMoney({ amount: '250.00', currency: 'EUR' })).toBe('+€250.00');
+    expect(formatSignedMoney({ amount: '-40.00', currency: 'EUR' })).toBe('-€40.00');
   });
 });
 

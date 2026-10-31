@@ -23,6 +23,12 @@ export function formatMoney(money: Money): string {
   }).format(money.amount);
 }
 
+/** Like {@link formatMoney}, with a plus sign on money in: "+€250.00", "-€40.00". */
+export function formatSignedMoney(money: Money): string {
+  const formatted = formatMoney(money);
+  return money.amount.startsWith('-') ? formatted : `+${formatted}`;
+}
+
 /** True for strings like "12.50" or "-3": the kind of numeric string Intl formats exactly. */
 function isDecimal(amount: string): amount is Intl.StringNumericLiteral {
   return /^-?\d+(\.\d+)?$/.test(amount);
