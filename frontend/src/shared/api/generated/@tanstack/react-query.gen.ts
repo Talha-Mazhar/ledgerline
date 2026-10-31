@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { depositMoney, getWallet, listActivity, listWalletActivity, listWallets, openWallet, type Options, withdrawMoney } from '../sdk.gen';
-import type { DepositMoneyData, DepositMoneyError, DepositMoneyResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
+import { depositMoney, exchangeMoney, getExchangeRate, getWallet, listActivity, listWalletActivity, listWallets, openWallet, type Options, quoteExchange, withdrawMoney } from '../sdk.gen';
+import type { DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -168,3 +168,59 @@ export const listActivityOptions = (options?: Options<ListActivityData>) => quer
     },
     queryKey: listActivityQueryKey(options)
 });
+
+export const getExchangeRateQueryKey = (options: Options<GetExchangeRateData>) => createQueryKey('getExchangeRate', options);
+
+/**
+ * The rate for changing one currency into another
+ */
+export const getExchangeRateOptions = (options: Options<GetExchangeRateData>) => queryOptions<GetExchangeRateResponse, GetExchangeRateError, GetExchangeRateResponse, ReturnType<typeof getExchangeRateQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getExchangeRate({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getExchangeRateQueryKey(options)
+});
+
+/**
+ * Preview an exchange without moving money
+ */
+export const quoteExchangeMutation = (options?: Partial<Options<QuoteExchangeData>>): UseMutationOptions<QuoteExchangeResponse, QuoteExchangeError, Options<QuoteExchangeData>> => {
+    const mutationOptions: UseMutationOptions<QuoteExchangeResponse, QuoteExchangeError, Options<QuoteExchangeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await quoteExchange({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Exchange money between two of the user's wallets
+ *
+ * One journal entry in two currencies: the sold money goes to Ledgerline's FX account in that
+ * currency, and the FX account in the other currency pays out the bought money.
+ *
+ */
+export const exchangeMoneyMutation = (options?: Partial<Options<ExchangeMoneyData>>): UseMutationOptions<ExchangeMoneyResponse, ExchangeMoneyError, Options<ExchangeMoneyData>> => {
+    const mutationOptions: UseMutationOptions<ExchangeMoneyResponse, ExchangeMoneyError, Options<ExchangeMoneyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await exchangeMoney({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

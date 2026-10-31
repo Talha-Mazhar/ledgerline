@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ledgerline API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     The contract between the Ledgerline backend and its clients. The frontend generates its types and
     client from this file, and the backend's tests check every response against it.
@@ -16,6 +16,8 @@ tags:
     description: One wallet per currency for the signed-in user.
   - name: Money movements
     description: Everything that moves money. Each one is a balanced entry in the ledger.
+  - name: Exchange
+    description: Changing money between currencies at Ledgerline's rates.
 
 paths:
   /wallets:
@@ -181,6 +183,87 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /exchange-rates:
+    get:
+      tags: [Exchange]
+      operationId: getExchangeRate
+      summary: The rate for changing one currency into another
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CurrencyCode'
+        - name: to
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CurrencyCode'
+      responses:
+        '200':
+          description: The rate Ledgerline offers, and the mid-market rate it's based on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /exchanges/quote:
+    post:
+      tags: [Exchange]
+      operationId: quoteExchange
+      summary: Preview an exchange without moving money
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+      responses:
+        '200':
+          description: What the user would sell and get.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeQuote'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+
+  /exchanges:
+    parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Exchange]
+      operationId: exchangeMoney
+      summary: Exchange money between two of the user's wallets
+      description: |
+        One journal entry in two currencies: the sold money goes to Ledgerline's FX account in that
+        currency, and the FX account in the other currency pays out the bought money.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+      responses:
+        '201':
+          description: The money was exchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exchange'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '409':
+          $ref: '#/components/responses/IdempotencyKeyReused'
+        '422':
+          $ref: '#/components/responses/RuleViolation'
+
 components:
   parameters:
     WalletId:
@@ -306,7 +389,7 @@ components:
     ActivityKind:
       type: string
       description: What moved the money, from this wallet's point of view.
-      enum: [DEPOSIT, WITHDRAWAL]
+      enum: [DEPOSIT, WITHDRAWAL, EXCHANGE_OUT, EXCHANGE_IN]
 
     ActivityItem:
       type: object
@@ -345,6 +428,68 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActivityItem'
+
+    Rate:
+      type: string
+      description: Units of the bought currency per one unit of the sold currency, six decimals.
+      pattern: '^\d+\.\d{6}$'
+      example: '25.024250'
+
+    ExchangeRate:
+      type: object
+      required: [from, to, rate, midRate, asOf]
+      properties:
+        from:
+          $ref: '#/components/schemas/CurrencyCode'
+        to:
+          $ref: '#/components/schemas/CurrencyCode'
+        rate:
+          $ref: '#/components/schemas/Rate'
+        midRate:
+          $ref: '#/components/schemas/Rate'
+        asOf:
+          type: string
+          format: date-time
+
+    ExchangeRequest:
+      type: object
+      required: [fromWalletId, toWalletId, amount]
+      properties:
+        fromWalletId:
+          type: string
+          format: uuid
+        toWalletId:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          description: How much to sell, in the from-wallet's currency.
+          pattern: '^\d{1,9}(\.\d{1,2})?$'
+
+    ExchangeQuote:
+      type: object
+      required: [sell, buy, rate]
+      properties:
+        sell:
+          $ref: '#/components/schemas/Money'
+        buy:
+          $ref: '#/components/schemas/Money'
+        rate:
+          $ref: '#/components/schemas/Rate'
+
+    Exchange:
+      type: object
+      required: [entryId, sell, buy, rate]
+      properties:
+        entryId:
+          type: string
+          format: uuid
+        sell:
+          $ref: '#/components/schemas/ActivityItem'
+        buy:
+          $ref: '#/components/schemas/ActivityItem'
+        rate:
+          $ref: '#/components/schemas/Rate'
 
     Problem:
       type: object

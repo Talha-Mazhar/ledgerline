@@ -45,7 +45,7 @@ export type AmountRequest = {
 /**
  * What moved the money, from this wallet's point of view.
  */
-export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL';
+export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL' | 'EXCHANGE_OUT' | 'EXCHANGE_IN';
 
 /**
  * One line of a wallet's ledger.
@@ -69,6 +69,41 @@ export type ActivityItem = {
 
 export type ActivityList = {
     items: Array<ActivityItem>;
+};
+
+/**
+ * Units of the bought currency per one unit of the sold currency, six decimals.
+ */
+export type Rate = string;
+
+export type ExchangeRate = {
+    from: CurrencyCode;
+    to: CurrencyCode;
+    rate: Rate;
+    midRate: Rate;
+    asOf: string;
+};
+
+export type ExchangeRequest = {
+    fromWalletId: string;
+    toWalletId: string;
+    /**
+     * How much to sell, in the from-wallet's currency.
+     */
+    amount: string;
+};
+
+export type ExchangeQuote = {
+    sell: Money;
+    buy: Money;
+    rate: Rate;
+};
+
+export type Exchange = {
+    entryId: string;
+    sell: ActivityItem;
+    buy: ActivityItem;
+    rate: Rate;
 };
 
 /**
@@ -330,3 +365,106 @@ export type ListActivityResponses = {
 };
 
 export type ListActivityResponse = ListActivityResponses[keyof ListActivityResponses];
+
+export type GetExchangeRateData = {
+    body?: never;
+    path?: never;
+    query: {
+        from: CurrencyCode;
+        to: CurrencyCode;
+    };
+    url: '/exchange-rates';
+};
+
+export type GetExchangeRateErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+};
+
+export type GetExchangeRateError = GetExchangeRateErrors[keyof GetExchangeRateErrors];
+
+export type GetExchangeRateResponses = {
+    /**
+     * The rate Ledgerline offers, and the mid-market rate it's based on.
+     */
+    200: ExchangeRate;
+};
+
+export type GetExchangeRateResponse = GetExchangeRateResponses[keyof GetExchangeRateResponses];
+
+export type QuoteExchangeData = {
+    body: ExchangeRequest;
+    path?: never;
+    query?: never;
+    url: '/exchanges/quote';
+};
+
+export type QuoteExchangeErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+};
+
+export type QuoteExchangeError = QuoteExchangeErrors[keyof QuoteExchangeErrors];
+
+export type QuoteExchangeResponses = {
+    /**
+     * What the user would sell and get.
+     */
+    200: ExchangeQuote;
+};
+
+export type QuoteExchangeResponse = QuoteExchangeResponses[keyof QuoteExchangeResponses];
+
+export type ExchangeMoneyData = {
+    body: ExchangeRequest;
+    headers: {
+        /**
+         * A unique id the client creates for each money movement it wants to make (a UUID). If the
+         * request is retried with the same key, the original result is returned and the money moves
+         * only once.
+         *
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/exchanges';
+};
+
+export type ExchangeMoneyErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+    /**
+     * The Idempotency-Key was already used for a different request.
+     */
+    409: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type ExchangeMoneyError = ExchangeMoneyErrors[keyof ExchangeMoneyErrors];
+
+export type ExchangeMoneyResponses = {
+    /**
+     * The money was exchanged.
+     */
+    201: Exchange;
+};
+
+export type ExchangeMoneyResponse = ExchangeMoneyResponses[keyof ExchangeMoneyResponses];

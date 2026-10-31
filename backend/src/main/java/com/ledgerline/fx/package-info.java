@@ -1,11 +1,11 @@
 /**
- * FX module: exchange rates, quotes with an expiry, and currency conversions.
+ * Currency exchange module: the rates Ledgerline offers for changing one currency into another.
  *
- * <p>A conversion is recorded as a journal entry in the ledger. May depend on the {@code ledger}
- * module only.
+ * <p>Only knows rates. Moving the money is the payments module's job; it asks this module for a
+ * rate. May depend on the {@code ledger} module (currencies and money).
  */
 @NullMarked
-@ApplicationModule(displayName = "Currency exchange", allowedDependencies = "ledger")
+@ApplicationModule(displayName = "FX", allowedDependencies = "ledger")
 package com.ledgerline.fx;
 
 import org.jspecify.annotations.NullMarked;

@@ -17,8 +17,8 @@ import {
   depositMoneyMutation,
   withdrawMoneyMutation,
 } from '@/shared/api/generated/@tanstack/react-query.gen';
-import { zAmountRequest } from '@/shared/api/generated/zod.gen';
 import { problemMessage } from '@/shared/api/problem';
+import { amountField } from '@/shared/money/amountField';
 import { currencies } from '@/shared/money/currencies';
 import { formatMoney } from '@/shared/money/format';
 
@@ -33,21 +33,7 @@ interface MoveMoneyDialogProps {
   readonly onDone: (message: string) => void;
 }
 
-/**
- * The form's rules. The format check is the contract's own (`zAmountRequest`, generated from
- * openapi.yaml); the messages are ours, written for people.
- */
-const amountForm = z.object({
-  amount: z
-    .string()
-    .trim()
-    .min(1, 'Enter an amount.')
-    .refine(
-      (value) => zAmountRequest.shape.amount.safeParse(value).success,
-      'Enter an amount like 250 or 250.50, with at most two decimals.',
-    )
-    .refine((value) => Number(value) > 0, 'Enter an amount greater than zero.'),
-});
+const amountForm = z.object({ amount: amountField });
 
 type AmountForm = z.infer<typeof amountForm>;
 

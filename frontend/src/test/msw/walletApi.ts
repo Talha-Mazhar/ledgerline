@@ -3,11 +3,17 @@ import type {
   ActivityItem,
   ActivityList,
   CurrencyCode,
+  Exchange,
+  ExchangeQuote,
   Problem,
   Wallet,
   WalletList,
 } from '@/shared/api/generated';
-import { zAmountRequest, zOpenWalletRequest } from '@/shared/api/generated/zod.gen';
+import {
+  zAmountRequest,
+  zExchangeRequest,
+  zOpenWalletRequest,
+} from '@/shared/api/generated/zod.gen';
 
 /**
  * A fake wallets API for tests, backed by in-memory lists. It follows api/openapi.yaml, and the
@@ -77,6 +83,28 @@ function move(wallet: Wallet, cents: number, kind: ActivityItem['kind'], descrip
   return line;
 }
 
+/** The demo rates, per euro, as in the backend's migration. */
+const perEur: Record<CurrencyCode, number> = { EUR: 1, USD: 1.085, CZK: 25.15, GBP: 0.855 };
+
+/** Ledgerline's rate with its 0.5% spread, six decimals, like the backend. */
+function rate(from: CurrencyCode, to: CurrencyCode): string {
+  return ((perEur[to] / perEur[from]) * 0.995).toFixed(6);
+}
+
+/** Prices an exchange request, or answers with the problem the backend would give. */
+function priced(body: unknown) {
+  const request = zExchangeRequest.parse(body);
+  const from = wallets.find((wallet) => wallet.id === request.fromWalletId);
+  const to = wallets.find((wallet) => wallet.id === request.toWalletId);
+  if (from === undefined || to === undefined) {
+    return { problem: problem(404, 'Wallet not found', 'You have no wallet with this id.') };
+  }
+  const sellCents = toCents(request.amount);
+  const quoted = rate(from.currency, to.currency);
+  const buyCents = Math.floor(sellCents * Number(quoted) + 1e-9);
+  return { from, to, sellCents, buyCents, rate: quoted };
+}
+
 export const walletHandlers = [
   http.get(`${API}/wallets`, () => HttpResponse.json<WalletList>({ items: wallets })),
 
@@ -136,6 +164,48 @@ export const walletHandlers = [
       items: activity.filter((line) => line.walletId === params['walletId']),
     }),
   ),
+
+  http.post(`${API}/exchanges/quote`, async ({ request }) => {
+    const price = priced(await request.json());
+    if ('problem' in price) {
+      return price.problem;
+    }
+    return HttpResponse.json<ExchangeQuote>({
+      sell: { amount: fromCents(price.sellCents), currency: price.from.currency },
+      buy: { amount: fromCents(price.buyCents), currency: price.to.currency },
+      rate: price.rate,
+    });
+  }),
+
+  http.post(`${API}/exchanges`, async ({ request }) => {
+    const price = priced(await request.json());
+    if ('problem' in price) {
+      return price.problem;
+    }
+    if (price.sellCents > toCents(price.from.balance.amount)) {
+      return problem(
+        422,
+        'Not enough money',
+        `This wallet has ${price.from.balance.amount} ${price.from.currency} available, which isn't enough.`,
+      );
+    }
+    const sell = move(
+      price.from,
+      -price.sellCents,
+      'EXCHANGE_OUT',
+      `Exchanged to ${price.to.currency}`,
+    );
+    const buy = move(
+      price.to,
+      price.buyCents,
+      'EXCHANGE_IN',
+      `Exchanged from ${price.from.currency}`,
+    );
+    return HttpResponse.json<Exchange>(
+      { entryId: sell.entryId, sell, buy: { ...buy, entryId: sell.entryId }, rate: price.rate },
+      { status: 201 },
+    );
+  }),
 
   http.get(`${API}/activity`, ({ request }) => {
     const limit = Number(new URL(request.url).searchParams.get('limit') ?? '50');
