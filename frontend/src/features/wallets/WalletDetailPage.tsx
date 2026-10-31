@@ -1,6 +1,7 @@
 import AddRounded from '@mui/icons-material/AddRounded';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import NorthEastRounded from '@mui/icons-material/NorthEastRounded';
+import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -16,11 +17,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link as RouterLink, useParams } from 'react-router';
 import { ActivityLedger } from '@/features/activity/ActivityLedger';
+import { ExchangeDialog } from '@/features/payments/ExchangeDialog';
 import { MoveMoneyDialog, type MoveMoneyMode } from '@/features/payments/MoveMoneyDialog';
 import type { Wallet } from '@/shared/api/generated';
 import {
   getWalletOptions,
   listWalletActivityOptions,
+  listWalletsOptions,
 } from '@/shared/api/generated/@tanstack/react-query.gen';
 import { problemStatus } from '@/shared/api/problem';
 import { paths } from '@/shared/config/paths';
@@ -87,7 +90,9 @@ interface WalletDetailsProps {
 function WalletDetails({ wallet, back }: WalletDetailsProps) {
   const { name } = currencies[wallet.currency];
   const activity = useQuery(listWalletActivityOptions({ path: { walletId: wallet.id } }));
+  const allWallets = useQuery(listWalletsOptions());
   const [moving, setMoving] = useState<MoveMoneyMode | null>(null);
+  const [exchanging, setExchanging] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   return (
@@ -101,7 +106,7 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
           </Box>
         }
         actions={
-          <Stack direction="row" spacing={1.5}>
+          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               size="large"
@@ -117,6 +122,14 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
               onClick={() => setMoving('withdraw')}
             >
               Withdraw
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<SwapHorizRounded />}
+              onClick={() => setExchanging(true)}
+            >
+              Exchange
             </Button>
           </Stack>
         }
@@ -149,6 +162,13 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
         wallet={wallet}
         mode={moving}
         onClose={() => setMoving(null)}
+        onDone={setNotice}
+      />
+      <ExchangeDialog
+        open={exchanging}
+        from={wallet}
+        wallets={allWallets.data?.items ?? []}
+        onClose={() => setExchanging(false)}
         onDone={setNotice}
       />
       <Snackbar
