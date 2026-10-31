@@ -5,6 +5,8 @@
 export const paths = {
   overview: '/',
   wallet: '/wallets/:walletId',
+  signIn: '/sign-in',
+  signUp: '/sign-up',
 } as const;
 
 export type AppPath = (typeof paths)[keyof typeof paths];

@@ -45,7 +45,7 @@ export type AmountRequest = {
 /**
  * What moved the money, from this wallet's point of view.
  */
-export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL' | 'EXCHANGE_OUT' | 'EXCHANGE_IN';
+export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL' | 'EXCHANGE_OUT' | 'EXCHANGE_IN' | 'TRANSFER_OUT' | 'TRANSFER_IN';
 
 /**
  * One line of a wallet's ledger.
@@ -106,6 +106,48 @@ export type Exchange = {
     rate: Rate;
 };
 
+export type User = {
+    id: string;
+    email: string;
+    displayName: string;
+};
+
+export type SignUpRequest = {
+    email: string;
+    displayName: string;
+    /**
+     * 10 to 64 characters.
+     */
+    password: string;
+};
+
+export type SignInRequest = {
+    email: string;
+    password: string;
+};
+
+export type TransferRequest = {
+    fromWalletId: string;
+    /**
+     * The email the recipient signed up with.
+     */
+    recipientEmail: string;
+    /**
+     * How much to send, in the from-wallet's currency.
+     */
+    amount: string;
+};
+
+export type Recipient = {
+    email: string;
+    displayName: string;
+};
+
+export type Transfer = {
+    activity: ActivityItem;
+    recipient: Recipient;
+};
+
 /**
  * RFC 9457 problem details.
  */
@@ -132,12 +174,137 @@ export type IdempotencyKey = string;
  */
 export type Limit = number;
 
+export type SignUpData = {
+    body: SignUpRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/sign-up';
+};
+
+export type SignUpErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * An account with this email already exists.
+     */
+    409: Problem;
+};
+
+export type SignUpError = SignUpErrors[keyof SignUpErrors];
+
+export type SignUpResponses = {
+    /**
+     * The account was created and its session started.
+     */
+    201: User;
+};
+
+export type SignUpResponse = SignUpResponses[keyof SignUpResponses];
+
+export type SignInData = {
+    body: SignInRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/sign-in';
+};
+
+export type SignInErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * Wrong email or password. The answer never says which.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type SignInError = SignInErrors[keyof SignInErrors];
+
+export type SignInResponses = {
+    /**
+     * Signed in; the session cookie is set.
+     */
+    200: User;
+};
+
+export type SignInResponse = SignInResponses[keyof SignInResponses];
+
+export type SignOutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/sign-out';
+};
+
+export type SignOutErrors = {
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type SignOutError = SignOutErrors[keyof SignOutErrors];
+
+export type SignOutResponses = {
+    /**
+     * Signed out. Also answered when there was no session.
+     */
+    204: void;
+};
+
+export type SignOutResponse = SignOutResponses[keyof SignOutResponses];
+
+export type GetCurrentUserData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/me';
+};
+
+export type GetCurrentUserErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type GetCurrentUserError = GetCurrentUserErrors[keyof GetCurrentUserErrors];
+
+export type GetCurrentUserResponses = {
+    /**
+     * The user this session belongs to.
+     */
+    200: User;
+};
+
+export type GetCurrentUserResponse = GetCurrentUserResponses[keyof GetCurrentUserResponses];
+
 export type ListWalletsData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/wallets';
 };
+
+export type ListWalletsErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type ListWalletsError = ListWalletsErrors[keyof ListWalletsErrors];
 
 export type ListWalletsResponses = {
     /**
@@ -160,6 +327,10 @@ export type OpenWalletErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
     /**
      * The user already has a wallet in this currency.
      */
@@ -191,6 +362,10 @@ export type GetWalletErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
     /**
      * The user has no wallet with this id.
      */
@@ -231,6 +406,10 @@ export type DepositMoneyErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
     /**
      * The user has no wallet with this id.
      */
@@ -276,6 +455,10 @@ export type WithdrawMoneyErrors = {
      */
     400: Problem;
     /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
      * The user has no wallet with this id.
      */
     404: Problem;
@@ -320,6 +503,10 @@ export type ListWalletActivityErrors = {
      */
     400: Problem;
     /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
      * The user has no wallet with this id.
      */
     404: Problem;
@@ -353,6 +540,10 @@ export type ListActivityErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
 };
 
 export type ListActivityError = ListActivityErrors[keyof ListActivityErrors];
@@ -381,6 +572,10 @@ export type GetExchangeRateErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
 };
 
 export type GetExchangeRateError = GetExchangeRateErrors[keyof GetExchangeRateErrors];
@@ -406,6 +601,10 @@ export type QuoteExchangeErrors = {
      * The request is malformed, for example an unknown currency or an invalid id.
      */
     400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
     /**
      * The user has no wallet with this id.
      */
@@ -445,6 +644,10 @@ export type ExchangeMoneyErrors = {
      */
     400: Problem;
     /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
      * The user has no wallet with this id.
      */
     404: Problem;
@@ -468,3 +671,53 @@ export type ExchangeMoneyResponses = {
 };
 
 export type ExchangeMoneyResponse = ExchangeMoneyResponses[keyof ExchangeMoneyResponses];
+
+export type SendMoneyData = {
+    body: TransferRequest;
+    headers: {
+        /**
+         * A unique id the client creates for each money movement it wants to make (a UUID). If the
+         * request is retried with the same key, the original result is returned and the money moves
+         * only once.
+         *
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/transfers';
+};
+
+export type SendMoneyErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The user has no wallet with this id, or nobody uses the recipient's email.
+     */
+    404: Problem;
+    /**
+     * The Idempotency-Key was already used for a different request.
+     */
+    409: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type SendMoneyError = SendMoneyErrors[keyof SendMoneyErrors];
+
+export type SendMoneyResponses = {
+    /**
+     * The money was sent.
+     */
+    201: Transfer;
+};
+
+export type SendMoneyResponse = SendMoneyResponses[keyof SendMoneyResponses];

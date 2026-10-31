@@ -5,7 +5,7 @@ import type {
   CurrencyCode,
   Exchange,
   ExchangeQuote,
-  Problem,
+  Transfer,
   Wallet,
   WalletList,
 } from '@/shared/api/generated';
@@ -13,7 +13,10 @@ import {
   zAmountRequest,
   zExchangeRequest,
   zOpenWalletRequest,
+  zTransferRequest,
 } from '@/shared/api/generated/zod.gen';
+import { currentUser, findUser, JANA } from '@/test/msw/authApi';
+import { API, post, problem } from '@/test/msw/http';
 
 /**
  * A fake wallets API for tests, backed by in-memory lists. It follows api/openapi.yaml, and the
@@ -21,8 +24,10 @@ import {
  * the contract fails the test that uses it.
  *
  * Amounts are kept in cents (whole numbers) so the fake's arithmetic is exact.
+ *
+ * The wallets belong to the signed-in user. Jana, the other demo user, has EUR and CZK wallets
+ * that can receive transfers; the fake doesn't track their balances.
  */
-export const API = 'http://localhost/api/v1';
 
 let wallets: Wallet[] = [];
 let activity: ActivityItem[] = [];
@@ -57,12 +62,15 @@ export function givenWallet(currency: CurrencyCode, amount = '0.00'): Wallet {
   return wallet;
 }
 
-function problem(status: number, title: string, detail: string) {
-  const body: Problem = { type: 'about:blank', title, status, detail };
-  return HttpResponse.json(body, {
-    status,
-    headers: { 'Content-Type': 'application/problem+json' },
-  });
+/** The currencies Jana can receive, as seeded by the backend's V5 migration. */
+const janasCurrencies: readonly CurrencyCode[] = ['EUR', 'CZK'];
+
+function notEnough(wallet: Wallet) {
+  return problem(
+    422,
+    'Not enough money',
+    `This wallet has ${wallet.balance.amount} ${wallet.currency} available, which isn't enough.`,
+  );
 }
 
 /** Records a movement on a wallet, like the ledger would, and returns the wallet's new line. */
@@ -108,7 +116,7 @@ function priced(body: unknown) {
 export const walletHandlers = [
   http.get(`${API}/wallets`, () => HttpResponse.json<WalletList>({ items: wallets })),
 
-  http.post(`${API}/wallets`, async ({ request }) => {
+  post('/wallets', async ({ request }) => {
     const { currency } = zOpenWalletRequest.parse(await request.json());
     if (wallets.some((wallet) => wallet.currency === currency)) {
       return problem(409, 'Wallet already open', `You already have a ${currency} wallet.`);
@@ -131,7 +139,7 @@ export const walletHandlers = [
       : HttpResponse.json<Wallet>(wallet);
   }),
 
-  http.post(`${API}/wallets/:walletId/:movement`, async ({ params, request }) => {
+  post('/wallets/:walletId/:movement', async ({ params, request }) => {
     const wallet = wallets.find((candidate) => candidate.id === params['walletId']);
     if (wallet === undefined) {
       return problem(404, 'Wallet not found', 'You have no wallet with this id.');
@@ -144,11 +152,7 @@ export const walletHandlers = [
     const cents = toCents(zAmountRequest.parse(await request.json()).amount);
     if (params['movement'] === 'withdrawals') {
       if (cents > toCents(wallet.balance.amount)) {
-        return problem(
-          422,
-          'Not enough money',
-          `This wallet has ${wallet.balance.amount} ${wallet.currency} available, which isn't enough.`,
-        );
+        return notEnough(wallet);
       }
       const line = move(wallet, -cents, 'WITHDRAWAL', 'Withdrawal to bank');
       idempotency.set(key, line);
@@ -165,7 +169,7 @@ export const walletHandlers = [
     }),
   ),
 
-  http.post(`${API}/exchanges/quote`, async ({ request }) => {
+  post('/exchanges/quote', async ({ request }) => {
     const price = priced(await request.json());
     if ('problem' in price) {
       return price.problem;
@@ -177,17 +181,13 @@ export const walletHandlers = [
     });
   }),
 
-  http.post(`${API}/exchanges`, async ({ request }) => {
+  post('/exchanges', async ({ request }) => {
     const price = priced(await request.json());
     if ('problem' in price) {
       return price.problem;
     }
     if (price.sellCents > toCents(price.from.balance.amount)) {
-      return problem(
-        422,
-        'Not enough money',
-        `This wallet has ${price.from.balance.amount} ${price.from.currency} available, which isn't enough.`,
-      );
+      return notEnough(price.from);
     }
     const sell = move(
       price.from,
@@ -203,6 +203,41 @@ export const walletHandlers = [
     );
     return HttpResponse.json<Exchange>(
       { entryId: sell.entryId, sell, buy: { ...buy, entryId: sell.entryId }, rate: price.rate },
+      { status: 201 },
+    );
+  }),
+
+  post('/transfers', async ({ request }) => {
+    const body = zTransferRequest.parse(await request.json());
+    const wallet = wallets.find((candidate) => candidate.id === body.fromWalletId);
+    if (wallet === undefined) {
+      return problem(404, 'Wallet not found', 'You have no wallet with this id.');
+    }
+    const recipient = findUser(body.recipientEmail);
+    if (recipient === undefined) {
+      return problem(404, 'Recipient not found', 'Nobody on Ledgerline uses this email.');
+    }
+    if (recipient.id === currentUser()?.id) {
+      return problem(
+        400,
+        "Can't send to yourself",
+        'To move money between your own wallets, use Exchange.',
+      );
+    }
+    if (recipient.id !== JANA.id || !janasCurrencies.includes(wallet.currency)) {
+      return problem(
+        422,
+        `Recipient can't receive ${wallet.currency}`,
+        `${recipient.displayName} has no ${wallet.currency} wallet yet.`,
+      );
+    }
+    const cents = toCents(body.amount);
+    if (cents > toCents(wallet.balance.amount)) {
+      return notEnough(wallet);
+    }
+    const line = move(wallet, -cents, 'TRANSFER_OUT', `Sent to ${recipient.displayName}`);
+    return HttpResponse.json<Transfer>(
+      { activity: line, recipient: { email: recipient.email, displayName: recipient.displayName } },
       { status: 201 },
     );
   }),

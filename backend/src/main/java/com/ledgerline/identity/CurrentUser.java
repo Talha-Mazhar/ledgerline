@@ -5,9 +5,8 @@ import java.util.UUID;
 /**
  * The user the current request acts for.
  *
- * <p>Other modules ask this interface for the user's id and never look at how sign-in works. Until
- * sign-in exists, {@link DemoCurrentUser} answers with one fixed demo user; adding Spring Security
- * replaces that class and nothing that depends on this interface changes.
+ * <p>Other modules ask this interface for the user's id and never look at how sign-in works. It is
+ * answered by {@link SecurityCurrentUser}, which reads the signed-in user from Spring Security.
  */
 public interface CurrentUser {
 

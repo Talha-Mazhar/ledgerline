@@ -1,6 +1,6 @@
 /**
- * Payments module: everything that moves money: deposits, withdrawals and currency exchange. Each
- * movement is one balanced journal entry in the ledger.
+ * Payments module: everything that moves money: deposits, withdrawals, currency exchange and
+ * transfers to other users. Each movement is one balanced journal entry in the ledger.
  *
  * <p>May depend on {@code ledger} (to post entries), {@code wallets} (to find the wallets involved),
  * {@code fx} (exchange rates) and {@code identity} (who is asking).

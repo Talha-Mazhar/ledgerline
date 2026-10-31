@@ -46,7 +46,9 @@ export const zActivityKind = z.enum([
     'DEPOSIT',
     'WITHDRAWAL',
     'EXCHANGE_OUT',
-    'EXCHANGE_IN'
+    'EXCHANGE_IN',
+    'TRANSFER_OUT',
+    'TRANSFER_IN'
 ]);
 
 /**
@@ -99,6 +101,39 @@ export const zExchange = z.object({
     rate: zRate
 });
 
+export const zUser = z.object({
+    id: z.uuid(),
+    email: z.string(),
+    displayName: z.string()
+});
+
+export const zSignUpRequest = z.object({
+    email: z.string().max(254),
+    displayName: z.string().max(80),
+    password: z.string()
+});
+
+export const zSignInRequest = z.object({
+    email: z.string(),
+    password: z.string()
+});
+
+export const zTransferRequest = z.object({
+    fromWalletId: z.uuid(),
+    recipientEmail: z.string(),
+    amount: z.string().regex(/^\d{1,9}(\.\d{1,2})?$/)
+});
+
+export const zRecipient = z.object({
+    email: z.string(),
+    displayName: z.string()
+});
+
+export const zTransfer = z.object({
+    activity: zActivityItem,
+    recipient: zRecipient
+});
+
 /**
  * RFC 9457 problem details.
  */
@@ -124,6 +159,30 @@ export const zIdempotencyKey = z.uuid();
  * How many lines to return, newest first.
  */
 export const zLimit = z.int().gte(1).lte(100).default(50);
+
+export const zSignUpBody = zSignUpRequest;
+
+/**
+ * The account was created and its session started.
+ */
+export const zSignUpResponse = zUser;
+
+export const zSignInBody = zSignInRequest;
+
+/**
+ * Signed in; the session cookie is set.
+ */
+export const zSignInResponse = zUser;
+
+/**
+ * Signed out. Also answered when there was no session.
+ */
+export const zSignOutResponse = z.void();
+
+/**
+ * The user this session belongs to.
+ */
+export const zGetCurrentUserResponse = zUser;
 
 /**
  * The user's wallets, oldest first.
@@ -225,3 +284,14 @@ export const zExchangeMoneyHeaders = z.object({
  * The money was exchanged.
  */
 export const zExchangeMoneyResponse = zExchange;
+
+export const zSendMoneyBody = zTransferRequest;
+
+export const zSendMoneyHeaders = z.object({
+    'Idempotency-Key': z.uuid()
+});
+
+/**
+ * The money was sent.
+ */
+export const zSendMoneyResponse = zTransfer;

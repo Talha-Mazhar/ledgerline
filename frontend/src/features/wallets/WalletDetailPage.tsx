@@ -1,6 +1,7 @@
 import AddRounded from '@mui/icons-material/AddRounded';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import NorthEastRounded from '@mui/icons-material/NorthEastRounded';
+import SendRounded from '@mui/icons-material/SendRounded';
 import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import Box from '@mui/material/Box';
@@ -19,6 +20,7 @@ import { Link as RouterLink, useParams } from 'react-router';
 import { ActivityLedger } from '@/features/activity/ActivityLedger';
 import { ExchangeDialog } from '@/features/payments/ExchangeDialog';
 import { MoveMoneyDialog, type MoveMoneyMode } from '@/features/payments/MoveMoneyDialog';
+import { SendMoneyDialog } from '@/features/payments/SendMoneyDialog';
 import type { Wallet } from '@/shared/api/generated';
 import {
   getWalletOptions,
@@ -93,6 +95,7 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
   const allWallets = useQuery(listWalletsOptions());
   const [moving, setMoving] = useState<MoveMoneyMode | null>(null);
   const [exchanging, setExchanging] = useState(false);
+  const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   return (
@@ -114,6 +117,14 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
               onClick={() => setMoving('deposit')}
             >
               Add money
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<SendRounded />}
+              onClick={() => setSending(true)}
+            >
+              Send
             </Button>
             <Button
               variant="outlined"
@@ -169,6 +180,12 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
         from={wallet}
         wallets={allWallets.data?.items ?? []}
         onClose={() => setExchanging(false)}
+        onDone={setNotice}
+      />
+      <SendMoneyDialog
+        open={sending}
+        from={wallet}
+        onClose={() => setSending(false)}
         onDone={setNotice}
       />
       <Snackbar

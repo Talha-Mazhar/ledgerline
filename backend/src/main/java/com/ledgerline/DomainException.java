@@ -16,6 +16,8 @@ public abstract class DomainException extends RuntimeException {
     public enum Kind {
         /** The request itself is invalid, e.g. an amount of zero. 400. */
         INVALID_REQUEST,
+        /** The user couldn't be identified, e.g. a wrong password. 401. */
+        UNAUTHENTICATED,
         /** The thing asked for doesn't exist for this user. 404. */
         NOT_FOUND,
         /** The request clashes with the current state, e.g. a wallet that already exists. 409. */
