@@ -16,5 +16,7 @@ interface WalletRepository extends JpaRepository<Wallet, UUID> {
 
     Optional<Wallet> findByIdAndOwnerId(UUID id, UUID ownerId);
 
+    Optional<Wallet> findByOwnerIdAndCurrency(UUID ownerId, CurrencyCode currency);
+
     boolean existsByOwnerIdAndCurrency(UUID ownerId, CurrencyCode currency);
 }
