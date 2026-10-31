@@ -35,6 +35,42 @@ export type OpenWalletRequest = {
     currency: CurrencyCode;
 };
 
+export type AmountRequest = {
+    /**
+     * A positive amount with up to two decimal places, e.g. "250" or "250.50".
+     */
+    amount: string;
+};
+
+/**
+ * What moved the money, from this wallet's point of view.
+ */
+export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL';
+
+/**
+ * One line of a wallet's ledger.
+ */
+export type ActivityItem = {
+    /**
+     * The ledger posting this line comes from.
+     */
+    id: string;
+    /**
+     * The journal entry the posting belongs to.
+     */
+    entryId: string;
+    walletId: string;
+    kind: ActivityKind;
+    description: string;
+    amount: Money;
+    balanceAfter: Money;
+    occurredAt: string;
+};
+
+export type ActivityList = {
+    items: Array<ActivityItem>;
+};
+
 /**
  * RFC 9457 problem details.
  */
@@ -45,6 +81,21 @@ export type Problem = {
     detail?: string;
     instance?: string;
 };
+
+export type WalletId = string;
+
+/**
+ * A unique id the client creates for each money movement it wants to make (a UUID). If the
+ * request is retried with the same key, the original result is returned and the money moves
+ * only once.
+ *
+ */
+export type IdempotencyKey = string;
+
+/**
+ * How many lines to return, newest first.
+ */
+export type Limit = number;
 
 export type ListWalletsData = {
     body?: never;
@@ -121,3 +172,161 @@ export type GetWalletResponses = {
 };
 
 export type GetWalletResponse = GetWalletResponses[keyof GetWalletResponses];
+
+export type DepositMoneyData = {
+    body: AmountRequest;
+    headers: {
+        /**
+         * A unique id the client creates for each money movement it wants to make (a UUID). If the
+         * request is retried with the same key, the original result is returned and the money moves
+         * only once.
+         *
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        walletId: string;
+    };
+    query?: never;
+    url: '/wallets/{walletId}/deposits';
+};
+
+export type DepositMoneyErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+    /**
+     * The Idempotency-Key was already used for a different request.
+     */
+    409: Problem;
+};
+
+export type DepositMoneyError = DepositMoneyErrors[keyof DepositMoneyErrors];
+
+export type DepositMoneyResponses = {
+    /**
+     * The money was added. The item is the wallet's new activity line.
+     */
+    201: ActivityItem;
+};
+
+export type DepositMoneyResponse = DepositMoneyResponses[keyof DepositMoneyResponses];
+
+export type WithdrawMoneyData = {
+    body: AmountRequest;
+    headers: {
+        /**
+         * A unique id the client creates for each money movement it wants to make (a UUID). If the
+         * request is retried with the same key, the original result is returned and the money moves
+         * only once.
+         *
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        walletId: string;
+    };
+    query?: never;
+    url: '/wallets/{walletId}/withdrawals';
+};
+
+export type WithdrawMoneyErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+    /**
+     * The Idempotency-Key was already used for a different request.
+     */
+    409: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type WithdrawMoneyError = WithdrawMoneyErrors[keyof WithdrawMoneyErrors];
+
+export type WithdrawMoneyResponses = {
+    /**
+     * The money was withdrawn. The item is the wallet's new activity line.
+     */
+    201: ActivityItem;
+};
+
+export type WithdrawMoneyResponse = WithdrawMoneyResponses[keyof WithdrawMoneyResponses];
+
+export type ListWalletActivityData = {
+    body?: never;
+    path: {
+        walletId: string;
+    };
+    query?: {
+        /**
+         * How many lines to return, newest first.
+         */
+        limit?: number;
+    };
+    url: '/wallets/{walletId}/activity';
+};
+
+export type ListWalletActivityErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+};
+
+export type ListWalletActivityError = ListWalletActivityErrors[keyof ListWalletActivityErrors];
+
+export type ListWalletActivityResponses = {
+    /**
+     * The wallet's activity lines.
+     */
+    200: ActivityList;
+};
+
+export type ListWalletActivityResponse = ListWalletActivityResponses[keyof ListWalletActivityResponses];
+
+export type ListActivityData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * How many lines to return, newest first.
+         */
+        limit?: number;
+    };
+    url: '/activity';
+};
+
+export type ListActivityErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+};
+
+export type ListActivityError = ListActivityErrors[keyof ListActivityErrors];
+
+export type ListActivityResponses = {
+    /**
+     * The activity lines.
+     */
+    200: ActivityList;
+};
+
+export type ListActivityResponse = ListActivityResponses[keyof ListActivityResponses];
