@@ -3,14 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { server } from '@/test/msw/server';
-import { API, givenWallet } from '@/test/msw/walletApi';
+import { API } from '@/test/msw/http';
+import { givenWallet } from '@/test/msw/walletApi';
 import { renderRoute } from '@/test/renderRoute';
 
 describe('OverviewPage', () => {
   it('is the page at the root URL', async () => {
     renderRoute('/');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Open EUR wallet' })).toBeInTheDocument();
   });
 

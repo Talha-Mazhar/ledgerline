@@ -1,3 +1,4 @@
+import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -8,11 +9,16 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import { BrandMark } from '@/app/layout/BrandMark';
 import { navigationItems, type NavigationItem } from '@/app/layout/navigation';
+import { useSignedInUser } from '@/features/auth/signedInUser';
+import { signOutMutation } from '@/shared/api/generated/@tanstack/react-query.gen';
+import { paths } from '@/shared/config/paths';
 
 const SIDEBAR_WIDTH = 248;
 
@@ -101,14 +107,56 @@ function Sidebar({ onNavigate }: SidebarProps) {
         ))}
       </List>
 
-      <Box sx={{ mt: 'auto', px: 1, pt: 2, borderTop: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          Demo account
+      <AccountFooter />
+    </Box>
+  );
+}
+
+/** Who is signed in, and the way out. */
+function AccountFooter() {
+  const user = useSignedInUser();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const signOut = useMutation({
+    ...signOutMutation(),
+    onSettled: () => {
+      // Whatever the server said, this browser leaves: nothing of this user stays in the cache.
+      void navigate(paths.signIn, { replace: true });
+      queryClient.removeQueries();
+    },
+  });
+
+  return (
+    <Box
+      sx={{
+        mt: 'auto',
+        px: 1,
+        pt: 2,
+        borderTop: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+      }}
+    >
+      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+        <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
+          {user.displayName}
         </Typography>
-        <Typography variant="body2" sx={{ color: 'ledger.onInkMuted' }}>
-          Sign-in isn't set up yet
+        <Typography variant="body2" noWrap sx={{ color: 'ledger.onInkMuted' }}>
+          {user.email}
         </Typography>
       </Box>
+      <Tooltip title="Sign out">
+        <IconButton
+          aria-label="Sign out"
+          onClick={() => signOut.mutate({})}
+          disabled={signOut.isPending}
+          sx={{ color: 'ledger.onInkMuted', '&:hover': { color: 'ledger.onInk' } }}
+        >
+          <LogoutRounded fontSize="small" />
+        </IconButton>
+      </Tooltip>
     </Box>
   );
 }
