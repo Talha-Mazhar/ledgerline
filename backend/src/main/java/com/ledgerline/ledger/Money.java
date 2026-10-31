@@ -25,6 +25,15 @@ public record Money(BigDecimal amount, CurrencyCode currency) {
         return new Money(BigDecimal.ZERO, currency);
     }
 
+    /** The same amount with the opposite sign: money in becomes money out. */
+    public Money negate() {
+        return new Money(amount.negate(), currency);
+    }
+
+    public boolean isPositive() {
+        return amount.signum() > 0;
+    }
+
     /** The amount as a plain decimal string, e.g. {@code "1250.00"}: the format the API uses. */
     public String toPlainString() {
         return amount.toPlainString();

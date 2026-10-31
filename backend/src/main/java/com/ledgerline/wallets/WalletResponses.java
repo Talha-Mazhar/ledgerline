@@ -1,5 +1,6 @@
 package com.ledgerline.wallets;
 
+import com.ledgerline.MoneyResponse;
 import com.ledgerline.ledger.CurrencyCode;
 import com.ledgerline.ledger.Money;
 import java.time.Instant;
@@ -26,13 +27,6 @@ final class WalletResponses {
         }
     }
 
-    /** Amounts travel as decimal strings ("1250.00"), so no client parses money as a float. */
-    record MoneyResponse(String amount, CurrencyCode currency) {
-        static MoneyResponse from(Money money) {
-            return new MoneyResponse(money.toPlainString(), money.currency());
-        }
-    }
-
     record WalletResponse(UUID id, CurrencyCode currency, MoneyResponse balance, WalletStatus status, Instant openedAt) {
         static WalletResponse from(Wallet wallet, Money balance) {
             return new WalletResponse(
@@ -42,4 +36,6 @@ final class WalletResponses {
 
     /** Lists are wrapped in an object, so paging fields can be added later without breaking clients. */
     record WalletListResponse(List<WalletResponse> items) {}
+
+    record ActivityListResponse(List<ActivityItemResponse> items) {}
 }

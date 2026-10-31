@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ledgerline API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     The contract between the Ledgerline backend and its clients. The frontend generates its types and
     client from this file, and the backend's tests check every response against it.
@@ -14,6 +14,8 @@ servers:
 tags:
   - name: Wallets
     description: One wallet per currency for the signed-in user.
+  - name: Money movements
+    description: Everything that moves money. Each one is a balanced entry in the ledger.
 
 paths:
   /wallets:
@@ -61,12 +63,7 @@ paths:
 
   /wallets/{walletId}:
     parameters:
-      - name: walletId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+      - $ref: '#/components/parameters/WalletId'
     get:
       tags: [Wallets]
       operationId: getWallet
@@ -81,16 +78,161 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
-          description: The user has no wallet with this id.
+          $ref: '#/components/responses/WalletNotFound'
+
+  /wallets/{walletId}/deposits:
+    parameters:
+      - $ref: '#/components/parameters/WalletId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Money movements]
+      operationId: depositMoney
+      summary: Add money to a wallet
+      description: |
+        Simulates a card top-up: the money enters the ledger from Ledgerline's funding account.
+        Sending the same Idempotency-Key again returns the original result instead of adding the
+        money twice.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmountRequest'
+      responses:
+        '201':
+          description: The money was added. The item is the wallet's new activity line.
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                $ref: '#/components/schemas/ActivityItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '409':
+          $ref: '#/components/responses/IdempotencyKeyReused'
+
+  /wallets/{walletId}/withdrawals:
+    parameters:
+      - $ref: '#/components/parameters/WalletId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Money movements]
+      operationId: withdrawMoney
+      summary: Withdraw money from a wallet
+      description: Simulates a payout to the user's bank account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmountRequest'
+      responses:
+        '201':
+          description: The money was withdrawn. The item is the wallet's new activity line.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '409':
+          $ref: '#/components/responses/IdempotencyKeyReused'
+        '422':
+          $ref: '#/components/responses/RuleViolation'
+
+  /wallets/{walletId}/activity:
+    parameters:
+      - $ref: '#/components/parameters/WalletId'
+    get:
+      tags: [Wallets]
+      operationId: listWalletActivity
+      summary: One wallet's activity, newest first
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: The wallet's activity lines.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+
+  /activity:
+    get:
+      tags: [Wallets]
+      operationId: listActivity
+      summary: Activity across all the user's wallets, newest first
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: The activity lines.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
 components:
+  parameters:
+    WalletId:
+      name: walletId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        A unique id the client creates for each money movement it wants to make (a UUID). If the
+        request is retried with the same key, the original result is returned and the money moves
+        only once.
+      schema:
+        type: string
+        format: uuid
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: How many lines to return, newest first.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+
   responses:
     BadRequest:
       description: The request is malformed, for example an unknown currency or an invalid id.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    WalletNotFound:
+      description: The user has no wallet with this id.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    IdempotencyKeyReused:
+      description: The Idempotency-Key was already used for a different request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RuleViolation:
+      description: The request is well-formed but breaks a business rule, e.g. not enough money.
       content:
         application/problem+json:
           schema:
@@ -150,6 +292,59 @@ components:
       properties:
         currency:
           $ref: '#/components/schemas/CurrencyCode'
+
+    AmountRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: string
+          description: A positive amount with up to two decimal places, e.g. "250" or "250.50".
+          pattern: '^\d{1,9}(\.\d{1,2})?$'
+          example: '250.00'
+
+    ActivityKind:
+      type: string
+      description: What moved the money, from this wallet's point of view.
+      enum: [DEPOSIT, WITHDRAWAL]
+
+    ActivityItem:
+      type: object
+      description: One line of a wallet's ledger.
+      required: [id, entryId, walletId, kind, description, amount, balanceAfter, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The ledger posting this line comes from.
+        entryId:
+          type: string
+          format: uuid
+          description: The journal entry the posting belongs to.
+        walletId:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ActivityKind'
+        description:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+          description: Positive for money in, negative for money out.
+        balanceAfter:
+          $ref: '#/components/schemas/Money'
+        occurredAt:
+          type: string
+          format: date-time
+
+    ActivityList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityItem'
 
     Problem:
       type: object

@@ -7,7 +7,10 @@ import { ActivityLedger } from '@/features/activity/ActivityLedger';
 import { OpenWalletDialog } from '@/features/wallets/OpenWalletDialog';
 import { WalletSummary } from '@/features/wallets/WalletSummary';
 import type { CurrencyCode } from '@/shared/api/generated';
-import { listWalletsOptions } from '@/shared/api/generated/@tanstack/react-query.gen';
+import {
+  listActivityOptions,
+  listWalletsOptions,
+} from '@/shared/api/generated/@tanstack/react-query.gen';
 import { currencies, currencyCodes } from '@/shared/money/currencies';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { PageHeader } from '@/shared/ui/PageHeader';
@@ -15,6 +18,7 @@ import { PageHeader } from '@/shared/ui/PageHeader';
 /** Landing page: the balance in every currency, and the activity across all wallets. */
 export function OverviewPage() {
   const wallets = useQuery(listWalletsOptions());
+  const activity = useQuery(listActivityOptions({ query: { limit: 10 } }));
   const [dialogCurrency, setDialogCurrency] = useState<CurrencyCode | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -51,7 +55,12 @@ export function OverviewPage() {
         <WalletSummary wallets={wallets.data?.items} onOpenWallet={setDialogCurrency} />
       )}
 
-      <ActivityLedger emptyMessage="No entries yet. Money you add, send or exchange is recorded here." />
+      <ActivityLedger
+        items={activity.data?.items}
+        showWallet
+        error={activity.isError ? { onRetry: () => void activity.refetch() } : undefined}
+        emptyMessage="No entries yet. Money you add, send or exchange is recorded here."
+      />
 
       <OpenWalletDialog
         open={dialogCurrency !== null}

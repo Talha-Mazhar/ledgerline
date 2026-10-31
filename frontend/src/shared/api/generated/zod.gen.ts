@@ -35,6 +35,33 @@ export const zOpenWalletRequest = z.object({
     currency: zCurrencyCode
 });
 
+export const zAmountRequest = z.object({
+    amount: z.string().regex(/^\d{1,9}(\.\d{1,2})?$/)
+});
+
+/**
+ * What moved the money, from this wallet's point of view.
+ */
+export const zActivityKind = z.enum(['DEPOSIT', 'WITHDRAWAL']);
+
+/**
+ * One line of a wallet's ledger.
+ */
+export const zActivityItem = z.object({
+    id: z.uuid(),
+    entryId: z.uuid(),
+    walletId: z.uuid(),
+    kind: zActivityKind,
+    description: z.string(),
+    amount: zMoney,
+    balanceAfter: zMoney,
+    occurredAt: z.iso.datetime()
+});
+
+export const zActivityList = z.object({
+    items: z.array(zActivityItem)
+});
+
 /**
  * RFC 9457 problem details.
  */
@@ -45,6 +72,21 @@ export const zProblem = z.object({
     detail: z.string().optional(),
     instance: z.string().optional()
 });
+
+export const zWalletId = z.uuid();
+
+/**
+ * A unique id the client creates for each money movement it wants to make (a UUID). If the
+ * request is retried with the same key, the original result is returned and the money moves
+ * only once.
+ *
+ */
+export const zIdempotencyKey = z.uuid();
+
+/**
+ * How many lines to return, newest first.
+ */
+export const zLimit = z.int().gte(1).lte(100).default(50);
 
 /**
  * The user's wallets, oldest first.
@@ -66,3 +108,55 @@ export const zGetWalletPath = z.object({
  * The wallet.
  */
 export const zGetWalletResponse = zWallet;
+
+export const zDepositMoneyBody = zAmountRequest;
+
+export const zDepositMoneyHeaders = z.object({
+    'Idempotency-Key': z.uuid()
+});
+
+export const zDepositMoneyPath = z.object({
+    walletId: z.uuid()
+});
+
+/**
+ * The money was added. The item is the wallet's new activity line.
+ */
+export const zDepositMoneyResponse = zActivityItem;
+
+export const zWithdrawMoneyBody = zAmountRequest;
+
+export const zWithdrawMoneyHeaders = z.object({
+    'Idempotency-Key': z.uuid()
+});
+
+export const zWithdrawMoneyPath = z.object({
+    walletId: z.uuid()
+});
+
+/**
+ * The money was withdrawn. The item is the wallet's new activity line.
+ */
+export const zWithdrawMoneyResponse = zActivityItem;
+
+export const zListWalletActivityPath = z.object({
+    walletId: z.uuid()
+});
+
+export const zListWalletActivityQuery = z.object({
+    limit: z.int().gte(1).lte(100).optional().default(50)
+});
+
+/**
+ * The wallet's activity lines.
+ */
+export const zListWalletActivityResponse = zActivityList;
+
+export const zListActivityQuery = z.object({
+    limit: z.int().gte(1).lte(100).optional().default(50)
+});
+
+/**
+ * The activity lines.
+ */
+export const zListActivityResponse = zActivityList;

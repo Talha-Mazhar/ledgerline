@@ -26,6 +26,26 @@ describe('OverviewPage', () => {
     );
   });
 
+  it('shows recent activity across wallets, with the wallet of each line', async () => {
+    const user = userEvent.setup();
+    const wallet = givenWallet('CZK');
+    renderRoute(`/wallets/${wallet.id}`);
+    await user.click(await screen.findByRole('button', { name: 'Add money' }));
+    await user.type(screen.getByLabelText('Amount (CZK)'), '1200');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add money' }));
+    await screen.findByText(/added$/);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'Overview' }));
+
+    const ledger = await screen.findByRole('table', { name: 'Activity' });
+    const row = (await within(ledger).findByText('Added money')).closest('tr');
+    if (row === null) {
+      throw new Error('The activity line is not in a table row');
+    }
+    expect(within(row).getByText('CZK')).toBeInTheDocument();
+  });
+
   it('offers to open every currency the user does not hold', async () => {
     givenWallet('USD');
     renderRoute('/');

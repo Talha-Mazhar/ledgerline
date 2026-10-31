@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getWallet, listWallets, openWallet, type Options } from '../sdk.gen';
-import type { GetWalletData, GetWalletError, GetWalletResponse, ListWalletsData, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse } from '../types.gen';
+import { depositMoney, getWallet, listActivity, listWalletActivity, listWallets, openWallet, type Options, withdrawMoney } from '../sdk.gen';
+import type { DepositMoneyData, DepositMoneyError, DepositMoneyResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -90,4 +90,81 @@ export const getWalletOptions = (options: Options<GetWalletData>) => queryOption
         return data;
     },
     queryKey: getWalletQueryKey(options)
+});
+
+/**
+ * Add money to a wallet
+ *
+ * Simulates a card top-up: the money enters the ledger from Ledgerline's funding account.
+ * Sending the same Idempotency-Key again returns the original result instead of adding the
+ * money twice.
+ *
+ */
+export const depositMoneyMutation = (options?: Partial<Options<DepositMoneyData>>): UseMutationOptions<DepositMoneyResponse, DepositMoneyError, Options<DepositMoneyData>> => {
+    const mutationOptions: UseMutationOptions<DepositMoneyResponse, DepositMoneyError, Options<DepositMoneyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await depositMoney({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Withdraw money from a wallet
+ *
+ * Simulates a payout to the user's bank account.
+ */
+export const withdrawMoneyMutation = (options?: Partial<Options<WithdrawMoneyData>>): UseMutationOptions<WithdrawMoneyResponse, WithdrawMoneyError, Options<WithdrawMoneyData>> => {
+    const mutationOptions: UseMutationOptions<WithdrawMoneyResponse, WithdrawMoneyError, Options<WithdrawMoneyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await withdrawMoney({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listWalletActivityQueryKey = (options: Options<ListWalletActivityData>) => createQueryKey('listWalletActivity', options);
+
+/**
+ * One wallet's activity, newest first
+ */
+export const listWalletActivityOptions = (options: Options<ListWalletActivityData>) => queryOptions<ListWalletActivityResponse, ListWalletActivityError, ListWalletActivityResponse, ReturnType<typeof listWalletActivityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listWalletActivity({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listWalletActivityQueryKey(options)
+});
+
+export const listActivityQueryKey = (options?: Options<ListActivityData>) => createQueryKey('listActivity', options);
+
+/**
+ * Activity across all the user's wallets, newest first
+ */
+export const listActivityOptions = (options?: Options<ListActivityData>) => queryOptions<ListActivityResponse, ListActivityError, ListActivityResponse, ReturnType<typeof listActivityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listActivity({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listActivityQueryKey(options)
 });

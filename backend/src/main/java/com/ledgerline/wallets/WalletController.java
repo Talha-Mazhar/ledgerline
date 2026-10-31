@@ -4,7 +4,10 @@ import com.ledgerline.identity.CurrentUser;
 import com.ledgerline.wallets.WalletResponses.OpenWalletRequest;
 import com.ledgerline.wallets.WalletResponses.WalletListResponse;
 import com.ledgerline.wallets.WalletResponses.WalletResponse;
+import com.ledgerline.ledger.Money;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,8 +33,10 @@ class WalletController {
 
     @GetMapping
     public WalletListResponse listWallets() {
-        return new WalletListResponse(wallets.walletsOf(currentUser.id()).stream()
-                .map(this::toResponse)
+        List<Wallet> owned = wallets.walletsOf(currentUser.id());
+        Map<UUID, Money> balances = wallets.balancesOf(owned);
+        return new WalletListResponse(owned.stream()
+                .map(wallet -> WalletResponse.from(wallet, balanceIn(balances, wallet)))
                 .toList());
     }
 
@@ -52,5 +57,10 @@ class WalletController {
 
     private WalletResponse toResponse(Wallet wallet) {
         return WalletResponse.from(wallet, wallets.balanceOf(wallet));
+    }
+
+    private static Money balanceIn(Map<UUID, Money> balances, Wallet wallet) {
+        Money balance = balances.get(wallet.id());
+        return balance != null ? balance : Money.zero(wallet.currency());
     }
 }

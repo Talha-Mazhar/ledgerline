@@ -1,27 +1,47 @@
 import { http, HttpResponse } from 'msw';
-import type { CurrencyCode, Problem, Wallet, WalletList } from '@/shared/api/generated';
-import { zOpenWalletRequest } from '@/shared/api/generated/zod.gen';
+import type {
+  ActivityItem,
+  ActivityList,
+  CurrencyCode,
+  Problem,
+  Wallet,
+  WalletList,
+} from '@/shared/api/generated';
+import { zAmountRequest, zOpenWalletRequest } from '@/shared/api/generated/zod.gen';
 
 /**
- * A fake wallets API for tests, backed by an in-memory list. It follows api/openapi.yaml, and the
+ * A fake wallets API for tests, backed by in-memory lists. It follows api/openapi.yaml, and the
  * generated client validates every response against the contract, so a fixture that drifts from
  * the contract fails the test that uses it.
+ *
+ * Amounts are kept in cents (whole numbers) so the fake's arithmetic is exact.
  */
 export const API = 'http://localhost/api/v1';
 
 let wallets: Wallet[] = [];
+let activity: ActivityItem[] = [];
+let idempotency = new Map<string, ActivityItem>();
 let sequence = 0;
 
 export function resetWallets(): void {
   wallets = [];
+  activity = [];
+  idempotency = new Map();
   sequence = 0;
 }
 
+function nextId(): string {
+  sequence += 1;
+  return `00000000-0000-4000-8000-${String(sequence).padStart(12, '0')}`;
+}
+
+const toCents = (amount: string): number => Math.round(Number(amount) * 100);
+const fromCents = (cents: number): string => (cents / 100).toFixed(2);
+
 /** Puts a wallet in the store directly, as if the user had opened it earlier. */
 export function givenWallet(currency: CurrencyCode, amount = '0.00'): Wallet {
-  sequence += 1;
   const wallet: Wallet = {
-    id: `00000000-0000-4000-8000-${String(sequence).padStart(12, '0')}`,
+    id: nextId(),
     currency,
     balance: { amount, currency },
     status: 'ACTIVE',
@@ -37,6 +57,24 @@ function problem(status: number, title: string, detail: string) {
     status,
     headers: { 'Content-Type': 'application/problem+json' },
   });
+}
+
+/** Records a movement on a wallet, like the ledger would, and returns the wallet's new line. */
+function move(wallet: Wallet, cents: number, kind: ActivityItem['kind'], description: string) {
+  const after = toCents(wallet.balance.amount) + cents;
+  wallet.balance = { amount: fromCents(after), currency: wallet.currency };
+  const line: ActivityItem = {
+    id: nextId(),
+    entryId: nextId(),
+    walletId: wallet.id,
+    kind,
+    description,
+    amount: { amount: fromCents(cents), currency: wallet.currency },
+    balanceAfter: { ...wallet.balance },
+    occurredAt: '2026-10-31T09:30:00Z',
+  };
+  activity.unshift(line);
+  return line;
 }
 
 export const walletHandlers = [
@@ -63,5 +101,44 @@ export const walletHandlers = [
           `You have no wallet with id ${String(params['walletId'])}.`,
         )
       : HttpResponse.json<Wallet>(wallet);
+  }),
+
+  http.post(`${API}/wallets/:walletId/:movement`, async ({ params, request }) => {
+    const wallet = wallets.find((candidate) => candidate.id === params['walletId']);
+    if (wallet === undefined) {
+      return problem(404, 'Wallet not found', 'You have no wallet with this id.');
+    }
+    const key = request.headers.get('Idempotency-Key') ?? '';
+    const replay = idempotency.get(key);
+    if (replay !== undefined) {
+      return HttpResponse.json<ActivityItem>(replay, { status: 201 });
+    }
+    const cents = toCents(zAmountRequest.parse(await request.json()).amount);
+    if (params['movement'] === 'withdrawals') {
+      if (cents > toCents(wallet.balance.amount)) {
+        return problem(
+          422,
+          'Not enough money',
+          `This wallet has ${wallet.balance.amount} ${wallet.currency} available, which isn't enough.`,
+        );
+      }
+      const line = move(wallet, -cents, 'WITHDRAWAL', 'Withdrawal to bank');
+      idempotency.set(key, line);
+      return HttpResponse.json<ActivityItem>(line, { status: 201 });
+    }
+    const line = move(wallet, cents, 'DEPOSIT', 'Added money');
+    idempotency.set(key, line);
+    return HttpResponse.json<ActivityItem>(line, { status: 201 });
+  }),
+
+  http.get(`${API}/wallets/:walletId/activity`, ({ params }) =>
+    HttpResponse.json<ActivityList>({
+      items: activity.filter((line) => line.walletId === params['walletId']),
+    }),
+  ),
+
+  http.get(`${API}/activity`, ({ request }) => {
+    const limit = Number(new URL(request.url).searchParams.get('limit') ?? '50');
+    return HttpResponse.json<ActivityList>({ items: activity.slice(0, limit) });
   }),
 ];

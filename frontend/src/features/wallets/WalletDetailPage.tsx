@@ -1,18 +1,27 @@
+import AddRounded from '@mui/icons-material/AddRounded';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
+import NorthEastRounded from '@mui/icons-material/NorthEastRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link as RouterLink, useParams } from 'react-router';
 import { ActivityLedger } from '@/features/activity/ActivityLedger';
+import { MoveMoneyDialog, type MoveMoneyMode } from '@/features/payments/MoveMoneyDialog';
 import type { Wallet } from '@/shared/api/generated';
-import { getWalletOptions } from '@/shared/api/generated/@tanstack/react-query.gen';
+import {
+  getWalletOptions,
+  listWalletActivityOptions,
+} from '@/shared/api/generated/@tanstack/react-query.gen';
 import { problemStatus } from '@/shared/api/problem';
 import { paths } from '@/shared/config/paths';
 import { currencies } from '@/shared/money/currencies';
@@ -77,6 +86,10 @@ interface WalletDetailsProps {
 
 function WalletDetails({ wallet, back }: WalletDetailsProps) {
   const { name } = currencies[wallet.currency];
+  const activity = useQuery(listWalletActivityOptions({ path: { walletId: wallet.id } }));
+  const [moving, setMoving] = useState<MoveMoneyMode | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
   return (
     <>
       <PageHeader
@@ -86,6 +99,26 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
             <CurrencyMark currency={wallet.currency} size={36} />
             {name} wallet
           </Box>
+        }
+        actions={
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<AddRounded />}
+              onClick={() => setMoving('deposit')}
+            >
+              Add money
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<NorthEastRounded />}
+              onClick={() => setMoving('withdraw')}
+            >
+              Withdraw
+            </Button>
+          </Stack>
         }
       />
 
@@ -106,7 +139,24 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
       </Box>
 
       <ActivityLedger
+        items={activity.data?.items}
+        showBalance
+        error={activity.isError ? { onRetry: () => void activity.refetch() } : undefined}
         emptyMessage={`No entries yet. Money added to or sent from this ${name.toLowerCase()} wallet is recorded here.`}
+      />
+
+      <MoveMoneyDialog
+        wallet={wallet}
+        mode={moving}
+        onClose={() => setMoving(null)}
+        onDone={setNotice}
+      />
+      <Snackbar
+        open={notice !== null}
+        message={notice}
+        autoHideDuration={4000}
+        onClose={() => setNotice(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </>
   );
