@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -73,13 +74,13 @@ class UserAccounts implements UserDirectory {
         if (tooLongForBcrypt(password)) {
             throw new InvalidCredentialsException();
         }
-        Optional<UserAccount> account = users.findByEmail(UserAccount.normalise(email));
-        boolean matches =
-                passwords.matches(password, account.map(UserAccount::passwordHash).orElse(unknownUserHash));
-        if (account.isEmpty() || !matches) {
+        @Nullable UserAccount account =
+                users.findByEmail(UserAccount.normalise(email)).orElse(null);
+        boolean matches = passwords.matches(password, account == null ? unknownUserHash : account.passwordHash());
+        if (account == null || !matches) {
             throw new InvalidCredentialsException();
         }
-        return signedIn(account.get());
+        return signedIn(account);
     }
 
     @Override
