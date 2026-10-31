@@ -42,7 +42,12 @@ export const zAmountRequest = z.object({
 /**
  * What moved the money, from this wallet's point of view.
  */
-export const zActivityKind = z.enum(['DEPOSIT', 'WITHDRAWAL']);
+export const zActivityKind = z.enum([
+    'DEPOSIT',
+    'WITHDRAWAL',
+    'EXCHANGE_OUT',
+    'EXCHANGE_IN'
+]);
 
 /**
  * One line of a wallet's ledger.
@@ -60,6 +65,38 @@ export const zActivityItem = z.object({
 
 export const zActivityList = z.object({
     items: z.array(zActivityItem)
+});
+
+/**
+ * Units of the bought currency per one unit of the sold currency, six decimals.
+ */
+export const zRate = z.string().regex(/^\d+\.\d{6}$/);
+
+export const zExchangeRate = z.object({
+    from: zCurrencyCode,
+    to: zCurrencyCode,
+    rate: zRate,
+    midRate: zRate,
+    asOf: z.iso.datetime()
+});
+
+export const zExchangeRequest = z.object({
+    fromWalletId: z.uuid(),
+    toWalletId: z.uuid(),
+    amount: z.string().regex(/^\d{1,9}(\.\d{1,2})?$/)
+});
+
+export const zExchangeQuote = z.object({
+    sell: zMoney,
+    buy: zMoney,
+    rate: zRate
+});
+
+export const zExchange = z.object({
+    entryId: z.uuid(),
+    sell: zActivityItem,
+    buy: zActivityItem,
+    rate: zRate
 });
 
 /**
@@ -160,3 +197,31 @@ export const zListActivityQuery = z.object({
  * The activity lines.
  */
 export const zListActivityResponse = zActivityList;
+
+export const zGetExchangeRateQuery = z.object({
+    from: zCurrencyCode,
+    to: zCurrencyCode
+});
+
+/**
+ * The rate Ledgerline offers, and the mid-market rate it's based on.
+ */
+export const zGetExchangeRateResponse = zExchangeRate;
+
+export const zQuoteExchangeBody = zExchangeRequest;
+
+/**
+ * What the user would sell and get.
+ */
+export const zQuoteExchangeResponse = zExchangeQuote;
+
+export const zExchangeMoneyBody = zExchangeRequest;
+
+export const zExchangeMoneyHeaders = z.object({
+    'Idempotency-Key': z.uuid()
+});
+
+/**
+ * The money was exchanged.
+ */
+export const zExchangeMoneyResponse = zExchange;

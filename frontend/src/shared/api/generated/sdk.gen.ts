@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
-import { zDepositMoneyResponse, zGetWalletResponse, zListActivityResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zWithdrawMoneyResponse } from './zod.gen';
+import type { DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
+import { zDepositMoneyResponse, zExchangeMoneyResponse, zGetExchangeRateResponse, zGetWalletResponse, zListActivityResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zQuoteExchangeResponse, zWithdrawMoneyResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -99,4 +99,43 @@ export const listActivity = <ThrowOnError extends boolean = false>(options?: Opt
     responseValidator: async (data) => await zListActivityResponse.parseAsync(data),
     url: '/activity',
     ...options
+});
+
+/**
+ * The rate for changing one currency into another
+ */
+export const getExchangeRate = <ThrowOnError extends boolean = false>(options: Options<GetExchangeRateData, ThrowOnError>): RequestResult<GetExchangeRateResponses, GetExchangeRateErrors, ThrowOnError> => (options.client ?? client).get<GetExchangeRateResponses, GetExchangeRateErrors, ThrowOnError>({
+    responseValidator: async (data) => await zGetExchangeRateResponse.parseAsync(data),
+    url: '/exchange-rates',
+    ...options
+});
+
+/**
+ * Preview an exchange without moving money
+ */
+export const quoteExchange = <ThrowOnError extends boolean = false>(options: Options<QuoteExchangeData, ThrowOnError>): RequestResult<QuoteExchangeResponses, QuoteExchangeErrors, ThrowOnError> => (options.client ?? client).post<QuoteExchangeResponses, QuoteExchangeErrors, ThrowOnError>({
+    responseValidator: async (data) => await zQuoteExchangeResponse.parseAsync(data),
+    url: '/exchanges/quote',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Exchange money between two of the user's wallets
+ *
+ * One journal entry in two currencies: the sold money goes to Ledgerline's FX account in that
+ * currency, and the FX account in the other currency pays out the bought money.
+ *
+ */
+export const exchangeMoney = <ThrowOnError extends boolean = false>(options: Options<ExchangeMoneyData, ThrowOnError>): RequestResult<ExchangeMoneyResponses, ExchangeMoneyErrors, ThrowOnError> => (options.client ?? client).post<ExchangeMoneyResponses, ExchangeMoneyErrors, ThrowOnError>({
+    responseValidator: async (data) => await zExchangeMoneyResponse.parseAsync(data),
+    url: '/exchanges',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
