@@ -25,7 +25,8 @@ public @interface WithDemoUser {
         @Override
         public SecurityContext createSecurityContext(WithDemoUser annotation) {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
-            context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(TestUsers.DEMO, null, List.of()));
+            context.setAuthentication(
+                    UsernamePasswordAuthenticationToken.authenticated(TestUsers.DEMO, null, List.of()));
             return context;
         }
     }

@@ -103,11 +103,9 @@ class JdbcLedger implements Ledger {
                                          ORDER BY p.seq DESC LIMIT 1), 0) AS balance
                         FROM ledger_accounts a
                         WHERE a.id IN (:ids)
-                        """)
-                .param("ids", accountIds)
-                .query(rs -> {
-                    balances.put(uuid(rs, "id"), new Money(rs.getBigDecimal("balance"), currency(rs)));
-                });
+                        """).param("ids", accountIds).query(rs -> {
+            balances.put(uuid(rs, "id"), new Money(rs.getBigDecimal("balance"), currency(rs)));
+        });
         return balances;
     }
 
@@ -142,8 +140,8 @@ class JdbcLedger implements Ledger {
                 throw new IllegalArgumentException("No ledger account " + leg.accountId());
             }
             if (account.currency() != leg.amount().currency()) {
-                throw new IllegalArgumentException("Account " + account.id() + " holds " + account.currency()
-                        + ", not " + leg.amount().currency());
+                throw new IllegalArgumentException("Account " + account.id() + " holds " + account.currency() + ", not "
+                        + leg.amount().currency());
             }
             BigDecimal after = account.balance().add(leg.amount().amount());
             if (account.isUserAccount() && after.signum() < 0) {
@@ -234,14 +232,10 @@ class JdbcLedger implements Ledger {
                         WHERE id IN (:ids)
                         ORDER BY id
                         FOR UPDATE
-                        """)
-                .param("ids", accountIds)
-                .query(rs -> {
-                    UUID id = uuid(rs, "id");
-                    accounts.put(
-                            id,
-                            new LockedAccount(id, USER.equals(rs.getString("kind")), currency(rs), BigDecimal.ZERO));
-                });
+                        """).param("ids", accountIds).query(rs -> {
+            UUID id = uuid(rs, "id");
+            accounts.put(id, new LockedAccount(id, USER.equals(rs.getString("kind")), currency(rs), BigDecimal.ZERO));
+        });
         balancesOf(accounts.keySet()).forEach((id, balance) -> {
             LockedAccount account = accounts.get(id);
             if (account != null) {

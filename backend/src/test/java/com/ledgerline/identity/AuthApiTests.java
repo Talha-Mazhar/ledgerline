@@ -98,8 +98,8 @@ class AuthApiTests {
 
     @Test
     void signsUpAndStartsASession() throws Exception {
-        MockHttpSession session = (MockHttpSession) Objects.requireNonNull(mvc.perform(
-                                signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
+        MockHttpSession session = (MockHttpSession)
+                Objects.requireNonNull(mvc.perform(signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
                         .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.email").value("pavel@example.com"))
                         .andExpect(openApi().isValid(CONTRACT))

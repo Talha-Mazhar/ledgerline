@@ -48,7 +48,11 @@ class UserAccount {
 
     static UserAccount register(String email, String displayName, String passwordHash, Instant now) {
         return new UserAccount(
-                UUID.randomUUID(), normalise(email), displayName.trim(), passwordHash, now.truncatedTo(ChronoUnit.MICROS));
+                UUID.randomUUID(),
+                normalise(email),
+                displayName.trim(),
+                passwordHash,
+                now.truncatedTo(ChronoUnit.MICROS));
     }
 
     /** Emails are compared in lower case, without surrounding spaces. */

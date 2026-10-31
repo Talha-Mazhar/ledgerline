@@ -74,8 +74,7 @@ class UserAccounts implements UserDirectory {
         if (tooLongForBcrypt(password)) {
             throw new InvalidCredentialsException();
         }
-        @Nullable UserAccount account =
-                users.findByEmail(UserAccount.normalise(email)).orElse(null);
+        @Nullable UserAccount account = users.findByEmail(UserAccount.normalise(email)).orElse(null);
         boolean matches = passwords.matches(password, account == null ? unknownUserHash : account.passwordHash());
         if (account == null || !matches) {
             throw new InvalidCredentialsException();

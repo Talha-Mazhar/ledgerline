@@ -6,7 +6,9 @@
  * e.g. the recipient of a transfer). How passwords and sessions work stays inside this package.
  */
 @NullMarked
-@ApplicationModule(displayName = "Identity", allowedDependencies = {})
+@ApplicationModule(
+        displayName = "Identity",
+        allowedDependencies = {})
 package com.ledgerline.identity;
 
 import org.jspecify.annotations.NullMarked;

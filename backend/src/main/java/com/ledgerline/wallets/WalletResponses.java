@@ -26,7 +26,8 @@ final class WalletResponses {
         }
     }
 
-    record WalletResponse(UUID id, CurrencyCode currency, MoneyResponse balance, WalletStatus status, Instant openedAt) {
+    record WalletResponse(
+            UUID id, CurrencyCode currency, MoneyResponse balance, WalletStatus status, Instant openedAt) {
         static WalletResponse from(Wallet wallet, Money balance) {
             return new WalletResponse(
                     wallet.id(), wallet.currency(), MoneyResponse.from(balance), wallet.status(), wallet.openedAt());

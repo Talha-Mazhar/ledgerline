@@ -82,7 +82,8 @@ class TransferApiTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.activity.balanceAfter.amount").value("70.00"));
 
-        mvc.perform(get("/api/v1/wallets/{walletId}", euros)).andExpect(jsonPath("$.balance.amount").value("70.00"));
+        mvc.perform(get("/api/v1/wallets/{walletId}", euros))
+                .andExpect(jsonPath("$.balance.amount").value("70.00"));
     }
 
     @Test

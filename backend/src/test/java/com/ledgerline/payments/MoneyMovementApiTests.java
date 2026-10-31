@@ -112,7 +112,8 @@ class MoneyMovementApiTests {
                 .andExpect(jsonPath("$.id").value(JsonPath.<String>read(first, "$.id")))
                 .andExpect(openApi().isValid(CONTRACT));
 
-        mvc.perform(get("/api/v1/wallets/{walletId}", walletId)).andExpect(jsonPath("$.balance.amount").value("75.00"));
+        mvc.perform(get("/api/v1/wallets/{walletId}", walletId))
+                .andExpect(jsonPath("$.balance.amount").value("75.00"));
     }
 
     @Test

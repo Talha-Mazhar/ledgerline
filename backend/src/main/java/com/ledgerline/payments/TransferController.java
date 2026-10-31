@@ -45,6 +45,7 @@ class TransferController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new TransferResponse(
                         ActivityItemResponse.from(sent.line()),
-                        new RecipientResponse(sent.recipient().email(), sent.recipient().displayName())));
+                        new RecipientResponse(
+                                sent.recipient().email(), sent.recipient().displayName())));
     }
 }

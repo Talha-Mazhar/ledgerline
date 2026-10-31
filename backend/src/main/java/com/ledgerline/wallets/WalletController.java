@@ -1,10 +1,10 @@
 package com.ledgerline.wallets;
 
 import com.ledgerline.identity.CurrentUser;
+import com.ledgerline.ledger.Money;
 import com.ledgerline.wallets.WalletResponses.OpenWalletRequest;
 import com.ledgerline.wallets.WalletResponses.WalletListResponse;
 import com.ledgerline.wallets.WalletResponses.WalletResponse;
-import com.ledgerline.ledger.Money;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;

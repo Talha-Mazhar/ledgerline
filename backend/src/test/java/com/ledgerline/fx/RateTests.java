@@ -12,7 +12,11 @@ import org.junit.jupiter.api.Test;
 class RateTests {
 
     private static final Rate EUR_TO_CZK = new Rate(
-            CurrencyCode.EUR, CurrencyCode.CZK, new BigDecimal("25.150000"), new BigDecimal("25.024250"), Instant.EPOCH);
+            CurrencyCode.EUR,
+            CurrencyCode.CZK,
+            new BigDecimal("25.150000"),
+            new BigDecimal("25.024250"),
+            Instant.EPOCH);
 
     @Test
     void convertsAtTheCustomerRate() {

@@ -70,6 +70,10 @@ class LedgerConcurrencyTests {
     private static JournalEntry entry(EntryKind kind, UUID owner, String key, UUID from, UUID to, String amount) {
         Money money = new Money(new BigDecimal(amount), CurrencyCode.EUR);
         return new JournalEntry(
-                kind, owner, key, kind + "|" + key, List.of(new Leg(from, money.negate(), "out"), new Leg(to, money, "in")));
+                kind,
+                owner,
+                key,
+                kind + "|" + key,
+                List.of(new Leg(from, money.negate(), "out"), new Leg(to, money, "in")));
     }
 }

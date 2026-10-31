@@ -75,7 +75,8 @@ class ExchangeApiTests {
                 .andExpect(jsonPath("$.buy.amount").value("2502.42"))
                 .andExpect(openApi().isValid(CONTRACT));
 
-        mvc.perform(get("/api/v1/wallets/{walletId}", euros)).andExpect(jsonPath("$.balance.amount").value("100.00"));
+        mvc.perform(get("/api/v1/wallets/{walletId}", euros))
+                .andExpect(jsonPath("$.balance.amount").value("100.00"));
     }
 
     @Test

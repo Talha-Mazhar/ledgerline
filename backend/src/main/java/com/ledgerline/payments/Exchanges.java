@@ -50,7 +50,8 @@ class Exchanges {
 
     @Transactional(readOnly = true)
     public Quote quote(UUID userId, UUID fromWalletId, UUID toWalletId, String typedAmount) {
-        return priced(wallets.requireOwned(userId, fromWalletId), wallets.requireOwned(userId, toWalletId), typedAmount);
+        return priced(
+                wallets.requireOwned(userId, fromWalletId), wallets.requireOwned(userId, toWalletId), typedAmount);
     }
 
     @Transactional

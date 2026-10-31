@@ -89,9 +89,8 @@ class WalletApiTests {
 
     @Test
     void getsAnOpenedWalletAtItsLocation() throws Exception {
-        MvcResult opened = mvc.perform(openWallet("GBP"))
-                .andExpect(status().isCreated())
-                .andReturn();
+        MvcResult opened =
+                mvc.perform(openWallet("GBP")).andExpect(status().isCreated()).andReturn();
         String location = Objects.requireNonNull(opened.getResponse().getHeader("Location"));
 
         mvc.perform(get(location))
@@ -131,7 +130,9 @@ class WalletApiTests {
 
     @Test
     void rejectsARequestWithoutACurrency() throws Exception {
-        mvc.perform(post("/api/v1/wallets").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        mvc.perform(post("/api/v1/wallets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
     }

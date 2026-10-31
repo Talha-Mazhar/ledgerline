@@ -52,8 +52,7 @@ class SecurityConfiguration {
             CsrfTokenRepository csrfTokens,
             CsrfTokenRequestAttributeHandler csrfHandler)
             throws Exception {
-        http.authorizeHttpRequests(requests -> requests
-                        .dispatcherTypeMatchers(DispatcherType.ERROR)
+        http.authorizeHttpRequests(requests -> requests.dispatcherTypeMatchers(DispatcherType.ERROR)
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-in", "/api/v1/auth/sign-up")
                         .permitAll()
