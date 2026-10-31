@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
-import { zDepositMoneyResponse, zExchangeMoneyResponse, zGetExchangeRateResponse, zGetWalletResponse, zListActivityResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zQuoteExchangeResponse, zWithdrawMoneyResponse } from './zod.gen';
+import type { DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetCurrentUserData, GetCurrentUserErrors, GetCurrentUserResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, SendMoneyData, SendMoneyErrors, SendMoneyResponses, SignInData, SignInErrors, SignInResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpData, SignUpErrors, SignUpResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
+import { zDepositMoneyResponse, zExchangeMoneyResponse, zGetCurrentUserResponse, zGetExchangeRateResponse, zGetWalletResponse, zListActivityResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zQuoteExchangeResponse, zSendMoneyResponse, zSignInResponse, zSignOutResponse, zSignUpResponse, zWithdrawMoneyResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -20,9 +20,53 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
+ * Create an account and sign in
+ */
+export const signUp = <ThrowOnError extends boolean = false>(options: Options<SignUpData, ThrowOnError>): RequestResult<SignUpResponses, SignUpErrors, ThrowOnError> => (options.client ?? client).post<SignUpResponses, SignUpErrors, ThrowOnError>({
+    responseValidator: async (data) => await zSignUpResponse.parseAsync(data),
+    url: '/auth/sign-up',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sign in with email and password
+ */
+export const signIn = <ThrowOnError extends boolean = false>(options: Options<SignInData, ThrowOnError>): RequestResult<SignInResponses, SignInErrors, ThrowOnError> => (options.client ?? client).post<SignInResponses, SignInErrors, ThrowOnError>({
+    responseValidator: async (data) => await zSignInResponse.parseAsync(data),
+    url: '/auth/sign-in',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * End the session
+ */
+export const signOut = <ThrowOnError extends boolean = false>(options?: Options<SignOutData, ThrowOnError>): RequestResult<SignOutResponses, SignOutErrors, ThrowOnError> => (options?.client ?? client).post<SignOutResponses, SignOutErrors, ThrowOnError>({
+    responseValidator: async (data) => await zSignOutResponse.parseAsync(data),
+    url: '/auth/sign-out',
+    ...options
+});
+
+/**
+ * The signed-in user
+ */
+export const getCurrentUser = <ThrowOnError extends boolean = false>(options?: Options<GetCurrentUserData, ThrowOnError>): RequestResult<GetCurrentUserResponses, GetCurrentUserErrors, ThrowOnError> => (options?.client ?? client).get<GetCurrentUserResponses, GetCurrentUserErrors, ThrowOnError>({
+    responseValidator: async (data) => await zGetCurrentUserResponse.parseAsync(data),
+    url: '/auth/me',
+    ...options
+});
+
+/**
  * List the user's wallets
  */
-export const listWallets = <ThrowOnError extends boolean = false>(options?: Options<ListWalletsData, ThrowOnError>): RequestResult<ListWalletsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListWalletsResponses, unknown, ThrowOnError>({
+export const listWallets = <ThrowOnError extends boolean = false>(options?: Options<ListWalletsData, ThrowOnError>): RequestResult<ListWalletsResponses, ListWalletsErrors, ThrowOnError> => (options?.client ?? client).get<ListWalletsResponses, ListWalletsErrors, ThrowOnError>({
     responseValidator: async (data) => await zListWalletsResponse.parseAsync(data),
     url: '/wallets',
     ...options
@@ -133,6 +177,23 @@ export const quoteExchange = <ThrowOnError extends boolean = false>(options: Opt
 export const exchangeMoney = <ThrowOnError extends boolean = false>(options: Options<ExchangeMoneyData, ThrowOnError>): RequestResult<ExchangeMoneyResponses, ExchangeMoneyErrors, ThrowOnError> => (options.client ?? client).post<ExchangeMoneyResponses, ExchangeMoneyErrors, ThrowOnError>({
     responseValidator: async (data) => await zExchangeMoneyResponse.parseAsync(data),
     url: '/exchanges',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Send money to another user
+ *
+ * One journal entry: the sender's wallet pays, the recipient's wallet in the same currency
+ * receives. The recipient is found by email and needs a wallet in that currency.
+ *
+ */
+export const sendMoney = <ThrowOnError extends boolean = false>(options: Options<SendMoneyData, ThrowOnError>): RequestResult<SendMoneyResponses, SendMoneyErrors, ThrowOnError> => (options.client ?? client).post<SendMoneyResponses, SendMoneyErrors, ThrowOnError>({
+    responseValidator: async (data) => await zSendMoneyResponse.parseAsync(data),
+    url: '/transfers',
     ...options,
     headers: {
         'Content-Type': 'application/json',

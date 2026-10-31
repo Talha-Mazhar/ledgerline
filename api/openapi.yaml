@@ -1,25 +1,117 @@
 openapi: 3.0.3
 info:
   title: Ledgerline API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     The contract between the Ledgerline backend and its clients. The frontend generates its types and
     client from this file, and the backend's tests check every response against it.
 
     Errors use RFC 9457 problem details (`application/problem+json`). Amounts are decimal strings,
     never floating-point numbers.
+
+    Signing in starts a session held in an `HttpOnly` cookie. Every endpoint except sign-up and
+    sign-in needs that session and answers 401 without it. Requests that change something (POST)
+    must also send the CSRF token: copy the `XSRF-TOKEN` cookie's value into an `X-XSRF-TOKEN`
+    header. Without it the server answers 403.
 servers:
   - url: /api/v1
 
 tags:
+  - name: Auth
+    description: Sign-up, sign-in and the signed-in user.
   - name: Wallets
     description: One wallet per currency for the signed-in user.
   - name: Money movements
     description: Everything that moves money. Each one is a balanced entry in the ledger.
   - name: Exchange
     description: Changing money between currencies at Ledgerline's rates.
+  - name: Transfers
+    description: Sending money to other Ledgerline users.
 
 paths:
+  /auth/sign-up:
+    post:
+      tags: [Auth]
+      operationId: signUp
+      summary: Create an account and sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: The account was created and its session started.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: An account with this email already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /auth/sign-in:
+    post:
+      tags: [Auth]
+      operationId: signIn
+      summary: Sign in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Signed in; the session cookie is set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Wrong email or password. The answer never says which.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/sign-out:
+    post:
+      tags: [Auth]
+      operationId: signOut
+      summary: End the session
+      responses:
+        '204':
+          description: Signed out. Also answered when there was no session.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: The signed-in user
+      responses:
+        '200':
+          description: The user this session belongs to.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
   /wallets:
     get:
       tags: [Wallets]
@@ -32,6 +124,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WalletList'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
     post:
       tags: [Wallets]
       operationId: openWallet
@@ -56,6 +150,8 @@ paths:
                 $ref: '#/components/schemas/Wallet'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '409':
           description: The user already has a wallet in this currency.
           content:
@@ -79,6 +175,8 @@ paths:
                 $ref: '#/components/schemas/Wallet'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
 
@@ -109,6 +207,8 @@ paths:
                 $ref: '#/components/schemas/ActivityItem'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
         '409':
@@ -138,6 +238,8 @@ paths:
                 $ref: '#/components/schemas/ActivityItem'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
         '409':
@@ -163,6 +265,8 @@ paths:
                 $ref: '#/components/schemas/ActivityList'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
 
@@ -182,6 +286,8 @@ paths:
                 $ref: '#/components/schemas/ActivityList'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
 
   /exchange-rates:
     get:
@@ -208,6 +314,8 @@ paths:
                 $ref: '#/components/schemas/ExchangeRate'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
 
   /exchanges/quote:
     post:
@@ -229,6 +337,8 @@ paths:
                 $ref: '#/components/schemas/ExchangeQuote'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
 
@@ -257,8 +367,48 @@ paths:
                 $ref: '#/components/schemas/Exchange'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '404':
           $ref: '#/components/responses/WalletNotFound'
+        '409':
+          $ref: '#/components/responses/IdempotencyKeyReused'
+        '422':
+          $ref: '#/components/responses/RuleViolation'
+
+  /transfers:
+    parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Transfers]
+      operationId: sendMoney
+      summary: Send money to another user
+      description: |
+        One journal entry: the sender's wallet pays, the recipient's wallet in the same currency
+        receives. The recipient is found by email and needs a wallet in that currency.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '201':
+          description: The money was sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          description: The user has no wallet with this id, or nobody uses the recipient's email.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '409':
           $ref: '#/components/responses/IdempotencyKeyReused'
         '422':
@@ -296,6 +446,18 @@ components:
         default: 50
 
   responses:
+    Unauthenticated:
+      description: No signed-in session.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: The request was refused, for example because the CSRF token is missing.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     BadRequest:
       description: The request is malformed, for example an unknown currency or an invalid id.
       content:
@@ -389,7 +551,7 @@ components:
     ActivityKind:
       type: string
       description: What moved the money, from this wallet's point of view.
-      enum: [DEPOSIT, WITHDRAWAL, EXCHANGE_OUT, EXCHANGE_IN]
+      enum: [DEPOSIT, WITHDRAWAL, EXCHANGE_OUT, EXCHANGE_IN, TRANSFER_OUT, TRANSFER_IN]
 
     ActivityItem:
       type: object
@@ -490,6 +652,75 @@ components:
           $ref: '#/components/schemas/ActivityItem'
         rate:
           $ref: '#/components/schemas/Rate'
+
+    User:
+      type: object
+      required: [id, email, displayName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+
+    SignUpRequest:
+      type: object
+      required: [email, displayName, password]
+      properties:
+        email:
+          type: string
+          maxLength: 254
+        displayName:
+          type: string
+          maxLength: 80
+        password:
+          type: string
+          description: 10 to 64 characters.
+
+    SignInRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    TransferRequest:
+      type: object
+      required: [fromWalletId, recipientEmail, amount]
+      properties:
+        fromWalletId:
+          type: string
+          format: uuid
+        recipientEmail:
+          type: string
+          description: The email the recipient signed up with.
+        amount:
+          type: string
+          description: How much to send, in the from-wallet's currency.
+          pattern: '^\d{1,9}(\.\d{1,2})?$'
+
+    Recipient:
+      type: object
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+        displayName:
+          type: string
+
+    Transfer:
+      type: object
+      required: [activity, recipient]
+      properties:
+        activity:
+          $ref: '#/components/schemas/ActivityItem'
+          description: The sender's new line.
+        recipient:
+          $ref: '#/components/schemas/Recipient'
 
     Problem:
       type: object
