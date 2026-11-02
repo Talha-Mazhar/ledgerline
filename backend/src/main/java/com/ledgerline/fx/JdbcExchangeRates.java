@@ -7,9 +7,12 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 class JdbcExchangeRates implements ExchangeRates {
 
     static final BigDecimal SPREAD = new BigDecimal("0.005");
+
+    /** Rates are cached (Redis) for an hour, and evicted whenever new ones are stored. */
+    static final String CACHE = "fx-rates";
 
     private final JdbcClient jdbc;
 
@@ -41,8 +47,31 @@ class JdbcExchangeRates implements ExchangeRates {
         return new Money(amount.amount().multiply(mid).setScale(currency.minorUnits(), RoundingMode.HALF_EVEN), currency);
     }
 
+    /**
+     * Stores fresh rates and empties the cache, so the next read sees them.
+     *
+     * @return true when at least one rate is newer than the stored one
+     */
+    @Transactional
+    @CacheEvict(cacheNames = CACHE, allEntries = true)
+    public boolean store(Map<CurrencyCode, BigDecimal> unitsPerEur, Instant asOf) {
+        int changed = 0;
+        for (Map.Entry<CurrencyCode, BigDecimal> rate : unitsPerEur.entrySet()) {
+            changed += jdbc.sql("""
+                            UPDATE exchange_rates SET units_per_eur = :rate, as_of = :asOf
+                            WHERE currency = :currency AND as_of < :asOf
+                            """)
+                    .param("rate", rate.getValue())
+                    .param("asOf", OffsetDateTime.ofInstant(asOf, ZoneOffset.UTC))
+                    .param("currency", rate.getKey().name())
+                    .update();
+        }
+        return changed > 0;
+    }
+
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE, key = "#from.name() + '-' + #to.name()")
     public Rate rate(CurrencyCode from, CurrencyCode to) {
         if (from == to) {
             throw new SameCurrencyException();

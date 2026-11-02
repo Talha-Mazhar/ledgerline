@@ -14,9 +14,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * The services the application needs, in containers: PostgreSQL, Kafka and MinIO (S3).
- * {@code @ServiceConnection} hands PostgreSQL's and Kafka's addresses to Spring Boot; MinIO's goes
- * in through a property. Images match {@code infra/compose.yaml}. Spring reuses one application
+ * The services the application needs, in containers: PostgreSQL, Kafka, Redis and MinIO (S3).
+ * {@code @ServiceConnection} hands PostgreSQL's, Kafka's and Redis's addresses to Spring Boot;
+ * MinIO's goes in through a property. Images match {@code infra/compose.yaml}. Spring reuses one application
  * context (and so one set of containers) across all test classes with the same configuration.
  *
  * <p>Public so that tests in module packages (e.g. {@code com.ledgerline.wallets}) can import it.
@@ -26,6 +26,7 @@ public class TestcontainersConfiguration {
 
     static final DockerImageName POSTGRES_IMAGE = DockerImageName.parse("postgres:18-alpine");
     static final DockerImageName KAFKA_IMAGE = DockerImageName.parse("apache/kafka-native:4.1.0");
+    static final DockerImageName REDIS_IMAGE = DockerImageName.parse("redis:8-alpine");
     static final DockerImageName MINIO_IMAGE = DockerImageName.parse("minio/minio:RELEASE.2025-04-22T22-12-26Z");
 
     @Bean
@@ -38,6 +39,12 @@ public class TestcontainersConfiguration {
     @ServiceConnection
     KafkaContainer kafkaContainer() {
         return new KafkaContainer(KAFKA_IMAGE);
+    }
+
+    @Bean
+    @ServiceConnection(name = "redis")
+    GenericContainer<?> redisContainer() {
+        return new GenericContainer<>(REDIS_IMAGE).withExposedPorts(6379);
     }
 
     @Bean

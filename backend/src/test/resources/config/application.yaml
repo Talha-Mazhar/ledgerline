@@ -7,3 +7,9 @@ ledgerline:
   scheduling:
     # Tests call scheduled jobs directly instead of waiting for them.
     enabled: false
+
+spring:
+  ai:
+    ollama:
+      # Nothing listens here: tests check what happens when the assistant's model is down.
+      base-url: http://localhost:1

@@ -17,6 +17,11 @@ services:
     ports:
       - "9092:9092"
 
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
@@ -39,6 +44,29 @@ services:
     labels:
       org.springframework.boot.ignore: true
 
+  # The AI assistant's model. Optional and large (about 2 GB): start it with
+  #   docker compose --profile ai up -d
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: [ai]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    labels:
+      org.springframework.boot.ignore: true
+
+  ollama-pull:
+    image: ollama/ollama:0.12.6
+    profiles: [ai]
+    depends_on: [ollama]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "llama3.2:3b"]
+    labels:
+      org.springframework.boot.ignore: true
+
 volumes:
   postgres-data:
   minio-data:
+  ollama-data:
