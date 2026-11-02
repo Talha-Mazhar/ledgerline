@@ -64,7 +64,7 @@ class RateStorageTests {
 
     @Test
     void newRatesReplaceCachedOnes() {
-        assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
+        BigDecimal before = rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate();
         // Redis takes the value a moment after the read returns.
         await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE))
@@ -72,18 +72,18 @@ class RateStorageTests {
                         .as("the rate is cached")
                         .isNotNull());
 
-        boolean changed = rates.store(
-                Map.of(CurrencyCode.CZK, new BigDecimal("24.31"), CurrencyCode.USD, new BigDecimal("1.0874")),
-                Instant.now());
+        BigDecimal fresh = before.add(BigDecimal.ONE);
+        boolean changed = rates.store(Map.of(CurrencyCode.CZK, fresh), Instant.now().plusSeconds(60));
 
         assertThat(changed).isTrue();
-        assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("24.31");
+        assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo(fresh);
     }
 
     @Test
     void olderRatesDontOverwriteNewerOnes() {
+        BigDecimal before = rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate();
         assertThat(rates.store(Map.of(CurrencyCode.CZK, new BigDecimal("30")), Instant.parse("2020-01-01T00:00:00Z")))
                 .isFalse();
-        assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
+        assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo(before);
     }
 }
