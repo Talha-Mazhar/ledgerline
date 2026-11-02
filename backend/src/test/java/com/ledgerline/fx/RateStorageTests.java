@@ -1,10 +1,12 @@
 package com.ledgerline.fx;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.ledgerline.TestcontainersConfiguration;
 import com.ledgerline.ledger.CurrencyCode;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
@@ -33,18 +34,15 @@ class RateStorageTests {
     private final JdbcExchangeRates rates;
     private final CacheManager caches;
     private final JdbcClient jdbc;
-    private final StringRedisTemplate redis;
     private List<Map<String, @Nullable Object>> seeded = List.of();
 
     RateStorageTests(
             @Autowired JdbcExchangeRates rates,
             @Autowired CacheManager caches,
-            @Autowired JdbcClient jdbc,
-            @Autowired StringRedisTemplate redis) {
+            @Autowired JdbcClient jdbc) {
         this.rates = rates;
         this.caches = caches;
         this.jdbc = jdbc;
-        this.redis = redis;
     }
 
     @BeforeEach
@@ -61,21 +59,18 @@ class RateStorageTests {
                     .param("currency", Objects.requireNonNull(row.get("currency")))
                     .update();
         }
-        Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).clear();
+        Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).invalidate();
     }
 
     @Test
     void newRatesReplaceCachedOnes() {
         assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
-        assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).get("EUR-CZK"))
-                .as(
-                        "the rate is cached (redis keys %s, proxy %s, advisors %s)",
-                        redis.keys("*"),
-                        org.springframework.aop.support.AopUtils.isAopProxy(rates),
-                        rates instanceof org.springframework.aop.framework.Advised advised
-                                ? java.util.Arrays.toString(advised.getAdvisors())
-                                : "none")
-                .isNotNull();
+        // Redis takes the value a moment after the read returns.
+        await().atMost(Duration.ofSeconds(5))
+                .untilAsserted(() -> assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE))
+                                .get("EUR-CZK"))
+                        .as("the rate is cached")
+                        .isNotNull());
 
         boolean changed = rates.store(
                 Map.of(CurrencyCode.CZK, new BigDecimal("24.31"), CurrencyCode.USD, new BigDecimal("1.0874")),
