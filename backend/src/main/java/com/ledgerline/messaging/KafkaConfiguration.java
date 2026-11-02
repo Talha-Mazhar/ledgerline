@@ -30,14 +30,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 class KafkaConfiguration {
 
-    private final short replicationFactor;
-
-    KafkaConfiguration(@Value("${ledgerline.kafka.replication-factor:1}") short replicationFactor) {
-        this.replicationFactor = replicationFactor;
-    }
-
+    // Static: Spring Modulith asks for this while it sets up event listeners, before ordinary beans
+    // can be created.
     @Bean
-    EventExternalizationConfiguration eventExternalizationConfiguration(JsonMapper json) {
+    static EventExternalizationConfiguration eventExternalizationConfiguration(JsonMapper json) {
         return EventExternalizationConfiguration.externalizing()
                 .select(EventExternalizationConfiguration.annotatedAsExternalized())
                 .mapping(Object.class, json::writeValueAsString)
@@ -45,14 +41,15 @@ class KafkaConfiguration {
     }
 
     @Bean
-    KafkaAdmin.NewTopics ledgerlineTopics() {
+    KafkaAdmin.NewTopics ledgerlineTopics(@Value("${ledgerline.kafka.replication-factor:1}") short replicationFactor) {
         return new KafkaAdmin.NewTopics(Topics.ALL.stream()
                 .map(name -> TopicBuilder.name(name).partitions(3).replicas(replicationFactor).build())
                 .toArray(NewTopic[]::new));
     }
 
     @Bean
-    RetryTopicConfiguration retryTopics(KafkaOperations<?, ?> kafka) {
+    RetryTopicConfiguration retryTopics(
+            KafkaOperations<?, ?> kafka, @Value("${ledgerline.kafka.replication-factor:1}") short replicationFactor) {
         return RetryTopicConfigurationBuilder.newInstance()
                 .exponentialBackoff(1_000, 2, 4_000)
                 .maxAttempts(4)
