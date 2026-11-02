@@ -1,6 +1,7 @@
 package com.ledgerline.messaging;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,13 +31,14 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 class KafkaConfiguration {
 
-    // Static: Spring Modulith asks for this while it sets up event listeners, before ordinary beans
-    // can be created.
+    // Spring Modulith asks for this while it sets up event listeners, before ordinary beans can be
+    // created. So the method is static, and the JSON mapper is looked up only when the first event
+    // is sent.
     @Bean
-    static EventExternalizationConfiguration eventExternalizationConfiguration(JsonMapper json) {
+    static EventExternalizationConfiguration eventExternalizationConfiguration(ObjectProvider<JsonMapper> json) {
         return EventExternalizationConfiguration.externalizing()
                 .select(EventExternalizationConfiguration.annotatedAsExternalized())
-                .mapping(Object.class, json::writeValueAsString)
+                .mapping(Object.class, event -> json.getObject().writeValueAsString(event))
                 .build();
     }
 
