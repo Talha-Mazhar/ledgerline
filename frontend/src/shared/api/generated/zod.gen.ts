@@ -307,6 +307,20 @@ export const zAuditList = z.object({
     items: z.array(zAuditEntry)
 });
 
+export const zStatementMonthList = z.object({
+    items: z.array(z.object({
+        month: z.string()
+    }))
+});
+
+export const zQuestion = z.object({
+    question: z.string().max(500)
+});
+
+export const zAnswer = z.object({
+    answer: z.string()
+});
+
 /**
  * RFC 9457 problem details.
  */
@@ -620,3 +634,29 @@ export const zListAuditEntriesQuery = z.object({
  * Newest first.
  */
 export const zListAuditEntriesResponse = zAuditList;
+
+export const zListStatementsPath = z.object({
+    walletId: z.uuid()
+});
+
+/**
+ * From the month the wallet was opened to this one.
+ */
+export const zListStatementsResponse = zStatementMonthList;
+
+export const zGetStatementPath = z.object({
+    walletId: z.uuid(),
+    month: z.string().regex(/^\d{4}-\d{2}$/)
+});
+
+/**
+ * The statement.
+ */
+export const zGetStatementResponse = z.string();
+
+export const zAskAssistantBody = zQuestion;
+
+/**
+ * The answer.
+ */
+export const zAskAssistantResponse = zAnswer;

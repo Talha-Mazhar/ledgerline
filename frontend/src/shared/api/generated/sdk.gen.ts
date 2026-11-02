@@ -2,8 +2,8 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApprovePaymentData, ApprovePaymentErrors, ApprovePaymentResponses, ApproveVerificationData, ApproveVerificationErrors, ApproveVerificationResponses, ChangeUserRoleData, ChangeUserRoleErrors, ChangeUserRoleResponses, DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetCurrentUserData, GetCurrentUserErrors, GetCurrentUserResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetLimitsData, GetLimitsErrors, GetLimitsResponses, GetVerificationData, GetVerificationDocumentData, GetVerificationDocumentErrors, GetVerificationDocumentResponses, GetVerificationErrors, GetVerificationResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAuditEntriesData, ListAuditEntriesErrors, ListAuditEntriesResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListPaymentsData, ListPaymentsErrors, ListPaymentsResponses, ListStaffPaymentsData, ListStaffPaymentsErrors, ListStaffPaymentsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListVerificationsToReviewData, ListVerificationsToReviewErrors, ListVerificationsToReviewResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadErrors, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, RefundPaymentData, RefundPaymentErrors, RefundPaymentResponses, RejectPaymentData, RejectPaymentErrors, RejectPaymentResponses, RejectVerificationData, RejectVerificationErrors, RejectVerificationResponses, SendMoneyData, SendMoneyErrors, SendMoneyResponses, SignInData, SignInErrors, SignInResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpData, SignUpErrors, SignUpResponses, SubmitVerificationData, SubmitVerificationErrors, SubmitVerificationResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
-import { zApprovePaymentResponse, zApproveVerificationResponse, zChangeUserRoleResponse, zDepositMoneyResponse, zExchangeMoneyResponse, zGetCurrentUserResponse, zGetExchangeRateResponse, zGetLimitsResponse, zGetVerificationDocumentResponse, zGetVerificationResponse, zGetWalletResponse, zListActivityResponse, zListAuditEntriesResponse, zListNotificationsResponse, zListPaymentsResponse, zListStaffPaymentsResponse, zListUsersResponse, zListVerificationsToReviewResponse, zListWalletActivityResponse, zListWalletsResponse, zMarkAllNotificationsReadResponse, zMarkNotificationReadResponse, zOpenWalletResponse, zQuoteExchangeResponse, zRefundPaymentResponse, zRejectPaymentResponse, zRejectVerificationResponse, zSendMoneyResponse, zSignInResponse, zSignOutResponse, zSignUpResponse, zSubmitVerificationResponse, zWithdrawMoneyResponse } from './zod.gen';
+import type { ApprovePaymentData, ApprovePaymentErrors, ApprovePaymentResponses, ApproveVerificationData, ApproveVerificationErrors, ApproveVerificationResponses, AskAssistantData, AskAssistantErrors, AskAssistantResponses, ChangeUserRoleData, ChangeUserRoleErrors, ChangeUserRoleResponses, DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetCurrentUserData, GetCurrentUserErrors, GetCurrentUserResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetLimitsData, GetLimitsErrors, GetLimitsResponses, GetStatementData, GetStatementErrors, GetStatementResponses, GetVerificationData, GetVerificationDocumentData, GetVerificationDocumentErrors, GetVerificationDocumentResponses, GetVerificationErrors, GetVerificationResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAuditEntriesData, ListAuditEntriesErrors, ListAuditEntriesResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListPaymentsData, ListPaymentsErrors, ListPaymentsResponses, ListStaffPaymentsData, ListStaffPaymentsErrors, ListStaffPaymentsResponses, ListStatementsData, ListStatementsErrors, ListStatementsResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListVerificationsToReviewData, ListVerificationsToReviewErrors, ListVerificationsToReviewResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadErrors, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, RefundPaymentData, RefundPaymentErrors, RefundPaymentResponses, RejectPaymentData, RejectPaymentErrors, RejectPaymentResponses, RejectVerificationData, RejectVerificationErrors, RejectVerificationResponses, SendMoneyData, SendMoneyErrors, SendMoneyResponses, SignInData, SignInErrors, SignInResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpData, SignUpErrors, SignUpResponses, SubmitVerificationData, SubmitVerificationErrors, SubmitVerificationResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
+import { zApprovePaymentResponse, zApproveVerificationResponse, zAskAssistantResponse, zChangeUserRoleResponse, zDepositMoneyResponse, zExchangeMoneyResponse, zGetCurrentUserResponse, zGetExchangeRateResponse, zGetLimitsResponse, zGetStatementResponse, zGetVerificationDocumentResponse, zGetVerificationResponse, zGetWalletResponse, zListActivityResponse, zListAuditEntriesResponse, zListNotificationsResponse, zListPaymentsResponse, zListStaffPaymentsResponse, zListStatementsResponse, zListUsersResponse, zListVerificationsToReviewResponse, zListWalletActivityResponse, zListWalletsResponse, zMarkAllNotificationsReadResponse, zMarkNotificationReadResponse, zOpenWalletResponse, zQuoteExchangeResponse, zRefundPaymentResponse, zRejectPaymentResponse, zRejectVerificationResponse, zSendMoneyResponse, zSignInResponse, zSignOutResponse, zSignUpResponse, zSubmitVerificationResponse, zWithdrawMoneyResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -387,4 +387,38 @@ export const listAuditEntries = <ThrowOnError extends boolean = false>(options?:
     responseValidator: async (data) => await zListAuditEntriesResponse.parseAsync(data),
     url: '/back-office/audit',
     ...options
+});
+
+/**
+ * The months a wallet has statements for, newest first
+ */
+export const listStatements = <ThrowOnError extends boolean = false>(options: Options<ListStatementsData, ThrowOnError>): RequestResult<ListStatementsResponses, ListStatementsErrors, ThrowOnError> => (options.client ?? client).get<ListStatementsResponses, ListStatementsErrors, ThrowOnError>({
+    responseValidator: async (data) => await zListStatementsResponse.parseAsync(data),
+    url: '/wallets/{walletId}/statements',
+    ...options
+});
+
+/**
+ * One month's statement as a PDF
+ */
+export const getStatement = <ThrowOnError extends boolean = false>(options: Options<GetStatementData, ThrowOnError>): RequestResult<GetStatementResponses, GetStatementErrors, ThrowOnError> => (options.client ?? client).get<GetStatementResponses, GetStatementErrors, ThrowOnError>({
+    responseValidator: async (data) => await zGetStatementResponse.parseAsync(data),
+    url: '/wallets/{walletId}/statements/{month}',
+    ...options
+});
+
+/**
+ * Ask about your own money
+ *
+ * The model answers only from tools that read the signed-in customer's balances and activity.
+ *
+ */
+export const askAssistant = <ThrowOnError extends boolean = false>(options: Options<AskAssistantData, ThrowOnError>): RequestResult<AskAssistantResponses, AskAssistantErrors, ThrowOnError> => (options.client ?? client).post<AskAssistantResponses, AskAssistantErrors, ThrowOnError>({
+    responseValidator: async (data) => await zAskAssistantResponse.parseAsync(data),
+    url: '/assistant/questions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

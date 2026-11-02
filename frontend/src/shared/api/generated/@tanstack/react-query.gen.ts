@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { approvePayment, approveVerification, changeUserRole, depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getLimits, getVerification, getVerificationDocument, getWallet, listActivity, listAuditEntries, listNotifications, listPayments, listStaffPayments, listUsers, listVerificationsToReview, listWalletActivity, listWallets, markAllNotificationsRead, markNotificationRead, openWallet, type Options, quoteExchange, refundPayment, rejectPayment, rejectVerification, sendMoney, signIn, signOut, signUp, submitVerification, withdrawMoney } from '../sdk.gen';
-import type { ApprovePaymentData, ApprovePaymentError, ApprovePaymentResponse, ApproveVerificationData, ApproveVerificationError, ApproveVerificationResponse, ChangeUserRoleData, ChangeUserRoleError, ChangeUserRoleResponse, DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetLimitsData, GetLimitsError, GetLimitsResponse, GetVerificationData, GetVerificationDocumentData, GetVerificationDocumentError, GetVerificationDocumentResponse, GetVerificationError, GetVerificationResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAuditEntriesData, ListAuditEntriesError, ListAuditEntriesResponse, ListNotificationsData, ListNotificationsError, ListNotificationsResponse, ListPaymentsData, ListPaymentsError, ListPaymentsResponse, ListStaffPaymentsData, ListStaffPaymentsError, ListStaffPaymentsResponse, ListUsersData, ListUsersError, ListUsersResponse, ListVerificationsToReviewData, ListVerificationsToReviewError, ListVerificationsToReviewResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadError, MarkAllNotificationsReadResponse, MarkNotificationReadData, MarkNotificationReadError, MarkNotificationReadResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, RefundPaymentData, RefundPaymentError, RefundPaymentResponse, RejectPaymentData, RejectPaymentError, RejectPaymentResponse, RejectVerificationData, RejectVerificationError, RejectVerificationResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, SubmitVerificationData, SubmitVerificationError, SubmitVerificationResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
+import { approvePayment, approveVerification, askAssistant, changeUserRole, depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getLimits, getStatement, getVerification, getVerificationDocument, getWallet, listActivity, listAuditEntries, listNotifications, listPayments, listStaffPayments, listStatements, listUsers, listVerificationsToReview, listWalletActivity, listWallets, markAllNotificationsRead, markNotificationRead, openWallet, type Options, quoteExchange, refundPayment, rejectPayment, rejectVerification, sendMoney, signIn, signOut, signUp, submitVerification, withdrawMoney } from '../sdk.gen';
+import type { ApprovePaymentData, ApprovePaymentError, ApprovePaymentResponse, ApproveVerificationData, ApproveVerificationError, ApproveVerificationResponse, AskAssistantData, AskAssistantError, AskAssistantResponse, ChangeUserRoleData, ChangeUserRoleError, ChangeUserRoleResponse, DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetLimitsData, GetLimitsError, GetLimitsResponse, GetStatementData, GetStatementError, GetStatementResponse, GetVerificationData, GetVerificationDocumentData, GetVerificationDocumentError, GetVerificationDocumentResponse, GetVerificationError, GetVerificationResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAuditEntriesData, ListAuditEntriesError, ListAuditEntriesResponse, ListNotificationsData, ListNotificationsError, ListNotificationsResponse, ListPaymentsData, ListPaymentsError, ListPaymentsResponse, ListStaffPaymentsData, ListStaffPaymentsError, ListStaffPaymentsResponse, ListStatementsData, ListStatementsError, ListStatementsResponse, ListUsersData, ListUsersError, ListUsersResponse, ListVerificationsToReviewData, ListVerificationsToReviewError, ListVerificationsToReviewResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadError, MarkAllNotificationsReadResponse, MarkNotificationReadData, MarkNotificationReadError, MarkNotificationReadResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, RefundPaymentData, RefundPaymentError, RefundPaymentResponse, RejectPaymentData, RejectPaymentError, RejectPaymentResponse, RejectVerificationData, RejectVerificationError, RejectVerificationResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, SubmitVerificationData, SubmitVerificationError, SubmitVerificationResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
 
 /**
  * Create an account and sign in
@@ -637,3 +637,59 @@ export const listAuditEntriesOptions = (options?: Options<ListAuditEntriesData>)
     },
     queryKey: listAuditEntriesQueryKey(options)
 });
+
+export const listStatementsQueryKey = (options: Options<ListStatementsData>) => createQueryKey('listStatements', options);
+
+/**
+ * The months a wallet has statements for, newest first
+ */
+export const listStatementsOptions = (options: Options<ListStatementsData>) => queryOptions<ListStatementsResponse, ListStatementsError, ListStatementsResponse, ReturnType<typeof listStatementsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listStatements({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listStatementsQueryKey(options)
+});
+
+export const getStatementQueryKey = (options: Options<GetStatementData>) => createQueryKey('getStatement', options);
+
+/**
+ * One month's statement as a PDF
+ */
+export const getStatementOptions = (options: Options<GetStatementData>) => queryOptions<GetStatementResponse, GetStatementError, GetStatementResponse, ReturnType<typeof getStatementQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStatement({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStatementQueryKey(options)
+});
+
+/**
+ * Ask about your own money
+ *
+ * The model answers only from tools that read the signed-in customer's balances and activity.
+ *
+ */
+export const askAssistantMutation = (options?: Partial<Options<AskAssistantData>>): UseMutationOptions<AskAssistantResponse, AskAssistantError, Options<AskAssistantData>> => {
+    const mutationOptions: UseMutationOptions<AskAssistantResponse, AskAssistantError, Options<AskAssistantData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await askAssistant({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ledgerline API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     The contract between the Ledgerline backend and its clients. The frontend generates its types and
     client from this file, and the backend's tests check every response against it.
@@ -33,6 +33,10 @@ tags:
     description: What happened to the customer's money, delivered through Kafka.
   - name: Verification
     description: Identity verification (KYC) and the limits that depend on it.
+  - name: Statements
+    description: Monthly PDF statements per wallet, built from the ledger.
+  - name: Assistant
+    description: Questions about your own money, answered by a local language model.
   - name: Back office
     description: Tools for support staff and admins. Customers get 403.
 
@@ -918,6 +922,89 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /wallets/{walletId}/statements:
+    parameters:
+      - $ref: '#/components/parameters/WalletId'
+    get:
+      tags: [Statements]
+      operationId: listStatements
+      summary: The months a wallet has statements for, newest first
+      responses:
+        '200':
+          description: From the month the wallet was opened to this one.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementMonthList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+
+  /wallets/{walletId}/statements/{month}:
+    parameters:
+      - $ref: '#/components/parameters/WalletId'
+      - name: month
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^\d{4}-\d{2}$'
+          example: '2026-10'
+    get:
+      tags: [Statements]
+      operationId: getStatement
+      summary: One month's statement as a PDF
+      responses:
+        '200':
+          description: The statement.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+
+  /assistant/questions:
+    post:
+      tags: [Assistant]
+      operationId: askAssistant
+      summary: Ask about your own money
+      description: |
+        The model answers only from tools that read the signed-in customer's balances and activity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      responses:
+        '200':
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Answer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          description: The model isn't running.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
 components:
   parameters:
     WalletId:
@@ -1535,6 +1622,35 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditEntry'
+
+    StatementMonthList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [month]
+            properties:
+              month:
+                type: string
+                example: '2026-10'
+
+    Question:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          maxLength: 500
+
+    Answer:
+      type: object
+      required: [answer]
+      properties:
+        answer:
+          type: string
 
     Problem:
       type: object

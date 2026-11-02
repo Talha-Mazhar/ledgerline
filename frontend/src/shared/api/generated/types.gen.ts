@@ -311,6 +311,20 @@ export type AuditList = {
     items: Array<AuditEntry>;
 };
 
+export type StatementMonthList = {
+    items: Array<{
+        month: string;
+    }>;
+};
+
+export type Question = {
+    question: string;
+};
+
+export type Answer = {
+    answer: string;
+};
+
 /**
  * RFC 9457 problem details.
  */
@@ -1512,3 +1526,111 @@ export type ListAuditEntriesResponses = {
 };
 
 export type ListAuditEntriesResponse = ListAuditEntriesResponses[keyof ListAuditEntriesResponses];
+
+export type ListStatementsData = {
+    body?: never;
+    path: {
+        walletId: string;
+    };
+    query?: never;
+    url: '/wallets/{walletId}/statements';
+};
+
+export type ListStatementsErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+};
+
+export type ListStatementsError = ListStatementsErrors[keyof ListStatementsErrors];
+
+export type ListStatementsResponses = {
+    /**
+     * From the month the wallet was opened to this one.
+     */
+    200: StatementMonthList;
+};
+
+export type ListStatementsResponse = ListStatementsResponses[keyof ListStatementsResponses];
+
+export type GetStatementData = {
+    body?: never;
+    path: {
+        walletId: string;
+        month: string;
+    };
+    query?: never;
+    url: '/wallets/{walletId}/statements/{month}';
+};
+
+export type GetStatementErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The user has no wallet with this id.
+     */
+    404: Problem;
+};
+
+export type GetStatementError = GetStatementErrors[keyof GetStatementErrors];
+
+export type GetStatementResponses = {
+    /**
+     * The statement.
+     */
+    200: Blob | File;
+};
+
+export type GetStatementResponse = GetStatementResponses[keyof GetStatementResponses];
+
+export type AskAssistantData = {
+    body: Question;
+    path?: never;
+    query?: never;
+    url: '/assistant/questions';
+};
+
+export type AskAssistantErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * The model isn't running.
+     */
+    503: Problem;
+};
+
+export type AskAssistantError = AskAssistantErrors[keyof AskAssistantErrors];
+
+export type AskAssistantResponses = {
+    /**
+     * The answer.
+     */
+    200: Answer;
+};
+
+export type AskAssistantResponse = AskAssistantResponses[keyof AskAssistantResponses];
