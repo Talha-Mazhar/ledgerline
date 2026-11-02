@@ -13,12 +13,12 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -DskipTests package \
 # Run: a JRE only, as a non-root user. The jar is unpacked in layers, least to most often changed,
 # so a code change rebuilds only the small last layer of the image.
 FROM eclipse-temurin:25-jre-alpine
-RUN addgroup -S ledgerline && adduser -S ledgerline -G ledgerline
+RUN addgroup -S -g 10001 ledgerline && adduser -S -u 10001 ledgerline -G ledgerline
 WORKDIR /app
 COPY --from=build /extracted/dependencies/ ./
 COPY --from=build /extracted/spring-boot-loader/ ./
 COPY --from=build /extracted/snapshot-dependencies/ ./
 COPY --from=build /extracted/application/ ./
-USER ledgerline
-EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]
+USER 10001
+EXPOSE 8080 8081
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError", "org.springframework.boot.loader.launch.JarLauncher"]
