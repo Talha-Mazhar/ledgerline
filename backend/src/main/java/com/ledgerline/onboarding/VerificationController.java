@@ -62,7 +62,8 @@ class VerificationController {
     ResponseEntity<VerificationResponse> submitVerification(@RequestParam("document") MultipartFile document)
             throws IOException {
         String name = document.getOriginalFilename();
-        Verification saved = verifications.submit(currentUser.id(), name == null ? "document" : name, document.getBytes());
+        Verification saved =
+                verifications.submit(currentUser.id(), name == null ? "document" : name, document.getBytes());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(VerificationResponse.from(saved));
     }
 }

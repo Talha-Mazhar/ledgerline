@@ -14,7 +14,11 @@ import java.util.UUID;
  * @param newRecipient true when this is the first transfer to this recipient (false for withdrawals)
  */
 public record ScreeningRequest(
-        UUID customerId, Money amount, List<Money> sentLast24Hours, int paymentsInVelocityWindow, boolean newRecipient) {
+        UUID customerId,
+        Money amount,
+        List<Money> sentLast24Hours,
+        int paymentsInVelocityWindow,
+        boolean newRecipient) {
 
     public ScreeningRequest {
         sentLast24Hours = List.copyOf(sentLast24Hours);

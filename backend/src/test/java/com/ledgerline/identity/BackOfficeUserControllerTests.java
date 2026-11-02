@@ -31,8 +31,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(SecurityConfiguration.class)
 class BackOfficeUserControllerTests {
 
-    private static final UserSummary JANA = new UserSummary(
-            TestUsers.JANA.id(), TestUsers.JANA.email(), TestUsers.JANA.displayName(), Role.CUSTOMER);
+    private static final UserSummary JANA =
+            new UserSummary(TestUsers.JANA.id(), TestUsers.JANA.email(), TestUsers.JANA.displayName(), Role.CUSTOMER);
 
     private final MockMvc mvc;
 

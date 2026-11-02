@@ -19,9 +19,9 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * {@link DocumentStore} on the S3 API: RustFS locally and in the demo cluster, Amazon S3 in
@@ -95,8 +95,7 @@ class S3DocumentStore implements DocumentStore {
 
     private void putObject(String key, byte[] content, String contentType) {
         s3.putObject(
-                request -> request.bucket(bucket).key(key).contentType(contentType),
-                RequestBody.fromBytes(content));
+                request -> request.bucket(bucket).key(key).contentType(contentType), RequestBody.fromBytes(content));
     }
 
     @Override

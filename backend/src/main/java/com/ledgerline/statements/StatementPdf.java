@@ -49,8 +49,12 @@ class StatementPdf {
             page.down(24);
             page.text(regular, 10, MARGIN, plain(statement.ownerName()) + " <" + plain(statement.ownerEmail()) + ">");
             page.down(ROW);
-            page.text(regular, 10, MARGIN, currencyName(statement.opening().currency()) + " wallet, "
-                    + statement.month().format(MONTH) + "  |  Wallet " + statement.walletId());
+            page.text(
+                    regular,
+                    10,
+                    MARGIN,
+                    currencyName(statement.opening().currency()) + " wallet, "
+                            + statement.month().format(MONTH) + "  |  Wallet " + statement.walletId());
             page.down(28);
 
             summary(page, "Opening balance", statement.opening());
@@ -69,7 +73,11 @@ class StatementPdf {
                     page = new Page(document);
                     header(page);
                 }
-                page.text(regular, 9, COLUMNS[0], line.postedAt().atZone(ZoneOffset.UTC).format(DAY));
+                page.text(
+                        regular,
+                        9,
+                        COLUMNS[0],
+                        line.postedAt().atZone(ZoneOffset.UTC).format(DAY));
                 page.text(regular, 9, COLUMNS[1], plain(line.memo()));
                 page.right(regular, 9, COLUMNS[3] - 10, signed(line.amount()));
                 page.right(regular, 9, PDRectangle.A4.getWidth() - MARGIN, amount(line.balanceAfter()));

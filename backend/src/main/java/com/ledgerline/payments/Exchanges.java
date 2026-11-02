@@ -106,9 +106,8 @@ class Exchanges {
     private Completed completed(PostedEntry entry, OwnedWallet from, OwnedWallet to) {
         StatementLine sold = entry.lineFor(from.id());
         StatementLine bought = entry.lineFor(to.id());
-        BigDecimal rate = bought.amount()
-                .amount()
-                .divide(sold.amount().amount().negate(), Rate.SCALE, RoundingMode.HALF_EVEN);
+        BigDecimal rate =
+                bought.amount().amount().divide(sold.amount().amount().negate(), Rate.SCALE, RoundingMode.HALF_EVEN);
         Rate applied = new Rate(from.currency(), to.currency(), rate, rate, sold.postedAt());
         return new Completed(entry.entryId(), sold, bought, applied);
     }

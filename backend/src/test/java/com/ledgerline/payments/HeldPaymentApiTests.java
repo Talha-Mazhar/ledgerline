@@ -114,15 +114,18 @@ class HeldPaymentApiTests {
         assertThat(balanceOf(bob, bobsEuros)).isEqualTo("1500.00");
         assertThat(balanceOf(alice, alicesEuros)).isEqualTo("3500.00");
 
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(auditActionsFor(paymentId))
-                .contains("PAYMENT_HELD", "PAYMENT_APPROVED_FIRST", "PAYMENT_APPROVED_FINAL"));
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(() -> assertThat(auditActionsFor(paymentId))
+                        .contains("PAYMENT_HELD", "PAYMENT_APPROVED_FIRST", "PAYMENT_APPROVED_FINAL"));
     }
 
     @Test
     void customersCantApprovePayments() throws Exception {
         String paymentId = ApiScenario.read(scenario.send(alice, alicesEuros, bob.email(), "1500"), "$.paymentId");
 
-        approve(bob, paymentId).andExpect(status().isForbidden()).andExpect(openApi().isValid(CONTRACT));
+        approve(bob, paymentId)
+                .andExpect(status().isForbidden())
+                .andExpect(openApi().isValid(CONTRACT));
     }
 
     @Test
@@ -197,8 +200,8 @@ class HeldPaymentApiTests {
     }
 
     private ResultActions approve(SignedInUser staff, String paymentId) throws Exception {
-        return mvc.perform(post("/api/v1/back-office/payments/{id}/approve", paymentId)
-                .with(TestUsers.signedInAs(staff)));
+        return mvc.perform(
+                post("/api/v1/back-office/payments/{id}/approve", paymentId).with(TestUsers.signedInAs(staff)));
     }
 
     private String balanceOf(SignedInUser owner, String walletId) throws Exception {

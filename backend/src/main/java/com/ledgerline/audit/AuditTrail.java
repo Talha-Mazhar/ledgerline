@@ -69,7 +69,12 @@ class AuditTrail {
 
     @ApplicationModuleListener
     void on(VerificationSubmitted event) {
-        log.record(event.userId(), "VERIFICATION_SUBMITTED", "USER", event.userId(), "Identity document uploaded.",
+        log.record(
+                event.userId(),
+                "VERIFICATION_SUBMITTED",
+                "USER",
+                event.userId(),
+                "Identity document uploaded.",
                 clock.instant());
     }
 

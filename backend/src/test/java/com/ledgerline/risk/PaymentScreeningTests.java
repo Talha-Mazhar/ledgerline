@@ -56,7 +56,9 @@ class PaymentScreeningTests {
 
     @Test
     void addsUpTheLast24Hours() {
-        assertThat(screening.screen(request("600", List.of(eur("800"), eur("700")), 2, false)).reasons())
+        assertThat(screening
+                        .screen(request("600", List.of(eur("800"), eur("700")), 2, false))
+                        .reasons())
                 .containsExactly("Above the 24-hour limit of €2,000.00.");
     }
 
@@ -77,7 +79,8 @@ class PaymentScreeningTests {
     void verifiedCustomersHaveHigherLimits() {
         when(tiers.tierOf(CUSTOMER)).thenReturn(Tier.VERIFIED);
 
-        assertThat(screening.screen(request("5000", List.of(), 0, false)).hold()).isFalse();
+        assertThat(screening.screen(request("5000", List.of(), 0, false)).hold())
+                .isFalse();
         assertThat(screening.limitsFor(CUSTOMER).daily()).isEqualByComparingTo("25000");
     }
 

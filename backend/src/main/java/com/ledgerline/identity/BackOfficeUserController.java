@@ -46,9 +46,8 @@ class BackOfficeUserController {
 
     @GetMapping
     UserListResponse listUsers(@RequestParam(defaultValue = "") String query) {
-        return new UserListResponse(accounts.search(query, 50).stream()
-                .map(StaffViewOfUser::from)
-                .toList());
+        return new UserListResponse(
+                accounts.search(query, 50).stream().map(StaffViewOfUser::from).toList());
     }
 
     @PutMapping("/{userId}/role")

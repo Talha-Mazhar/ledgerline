@@ -64,7 +64,11 @@ class MonthlyStatementJob {
             }
             documents.put(key(wallet, month), pdf.render(statement), "application/pdf");
             events.publishEvent(new StatementReady(
-                    UUID.randomUUID(), wallet.ownerId(), wallet.id(), wallet.currency().name(), month.toString()));
+                    UUID.randomUUID(),
+                    wallet.ownerId(),
+                    wallet.id(),
+                    wallet.currency().name(),
+                    month.toString()));
             archived++;
         }
         return archived;

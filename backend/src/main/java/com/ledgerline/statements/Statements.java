@@ -40,7 +40,9 @@ class Statements {
         OwnedWallet wallet = wallets.requireOwned(ownerId, walletId);
         YearMonth first = YearMonth.from(wallet.openedAt().atZone(ZoneOffset.UTC));
         List<YearMonth> months = new ArrayList<>();
-        for (YearMonth month = YearMonth.now(clock.withZone(ZoneOffset.UTC)); !month.isBefore(first); month = month.minusMonths(1)) {
+        for (YearMonth month = YearMonth.now(clock.withZone(ZoneOffset.UTC));
+                !month.isBefore(first);
+                month = month.minusMonths(1)) {
             months.add(month);
         }
         return months;

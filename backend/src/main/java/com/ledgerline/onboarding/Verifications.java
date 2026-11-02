@@ -78,8 +78,8 @@ class Verifications implements CustomerTiers {
         documents.put(key, content, contentType);
         verification.submit(key, cleanName(fileName), contentType, clock.instant());
         Verification saved = verifications.save(verification);
-        events.publishEvent(
-                new VerificationSubmitted(UUID.randomUUID(), userId, users.require(userId).displayName()));
+        events.publishEvent(new VerificationSubmitted(
+                UUID.randomUUID(), userId, users.require(userId).displayName()));
         return saved;
     }
 
@@ -145,7 +145,9 @@ class Verifications implements CustomerTiers {
     /** The file name as shown to staff: no path, no control characters, at most 200 characters. */
     private static String cleanName(String fileName) {
         String name = fileName.replace('\\', '/');
-        name = name.substring(name.lastIndexOf('/') + 1).replaceAll("\\p{Cntrl}", "").strip();
+        name = name.substring(name.lastIndexOf('/') + 1)
+                .replaceAll("\\p{Cntrl}", "")
+                .strip();
         if (name.isEmpty()) {
             name = "document";
         }

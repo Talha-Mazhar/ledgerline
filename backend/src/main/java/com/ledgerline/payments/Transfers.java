@@ -66,8 +66,8 @@ class Transfers {
         OwnedWallet to = wallets.findByOwnerAndCurrency(recipient.id(), from.currency())
                 .orElseThrow(() -> TransferRefusedException.noWallet(
                         recipient.displayName(), from.currency().name()));
-        String fingerprint = "TRANSFER|" + from.id() + "|" + to.id() + "|" + amount.toPlainString() + "|"
-                + amount.currency();
+        String fingerprint =
+                "TRANSFER|" + from.id() + "|" + to.id() + "|" + amount.toPlainString() + "|" + amount.currency();
         Optional<Payment> earlier = book.earlier(userId, idempotencyKey, fingerprint);
         if (earlier.isPresent()) {
             return new Sent(book.lineOf(earlier.get(), from.id()), recipient, earlier.get());
@@ -84,7 +84,10 @@ class Transfers {
                     idempotencyKey.toString(),
                     fingerprint,
                     List.of(
-                            new Leg(from.id(), amount.negate(), "Sent to " + recipient.displayName() + ", awaiting approval"),
+                            new Leg(
+                                    from.id(),
+                                    amount.negate(),
+                                    "Sent to " + recipient.displayName() + ", awaiting approval"),
                             new Leg(hold, amount, "Held: transfer to " + recipient.displayName()))));
         } else {
             posted = ledger.post(new JournalEntry(
@@ -97,7 +100,8 @@ class Transfers {
                             new Leg(to.id(), amount, "Received from " + sender.displayName()))));
         }
         if (posted.replayed()) {
-            return new Sent(posted.lineFor(from.id()), recipient, book.afterReplay(userId, idempotencyKey, fingerprint));
+            return new Sent(
+                    posted.lineFor(from.id()), recipient, book.afterReplay(userId, idempotencyKey, fingerprint));
         }
 
         Payment payment = Payment.request(

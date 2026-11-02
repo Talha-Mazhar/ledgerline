@@ -13,7 +13,13 @@ final class Messages {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record PaymentCompleted(
-            UUID eventId, UUID paymentId, String kind, UUID payerId, @Nullable UUID payeeId, String amount, String currency) {}
+            UUID eventId,
+            UUID paymentId,
+            String kind,
+            UUID payerId,
+            @Nullable UUID payeeId,
+            String amount,
+            String currency) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record PaymentHeld(
@@ -40,7 +46,11 @@ final class Messages {
     record VerificationSubmitted(UUID eventId, UUID userId, String displayName) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record VerificationReviewed(UUID eventId, UUID userId, boolean approved, @Nullable String reason) {}
+    record VerificationReviewed(
+            UUID eventId,
+            UUID userId,
+            boolean approved,
+            @Nullable String reason) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record StatementReady(UUID eventId, UUID userId, UUID walletId, String currency, String month) {}

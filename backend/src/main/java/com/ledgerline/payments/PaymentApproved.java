@@ -9,4 +9,5 @@ import java.util.UUID;
  *
  * @param finalApproval true for the second approval, which released the money
  */
-public record PaymentApproved(UUID eventId, UUID paymentId, UUID approverId, boolean finalApproval, Instant occurredAt) {}
+public record PaymentApproved(
+        UUID eventId, UUID paymentId, UUID approverId, boolean finalApproval, Instant occurredAt) {}

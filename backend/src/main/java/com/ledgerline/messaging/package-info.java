@@ -11,7 +11,9 @@
  * </ul>
  */
 @NullMarked
-@ApplicationModule(displayName = "Messaging", allowedDependencies = {})
+@ApplicationModule(
+        displayName = "Messaging",
+        allowedDependencies = {})
 package com.ledgerline.messaging;
 
 import org.jspecify.annotations.NullMarked;

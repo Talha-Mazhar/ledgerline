@@ -36,10 +36,7 @@ class RateStorageTests {
     private final JdbcClient jdbc;
     private List<Map<String, @Nullable Object>> seeded = List.of();
 
-    RateStorageTests(
-            @Autowired JdbcExchangeRates rates,
-            @Autowired CacheManager caches,
-            @Autowired JdbcClient jdbc) {
+    RateStorageTests(@Autowired JdbcExchangeRates rates, @Autowired CacheManager caches, @Autowired JdbcClient jdbc) {
         this.rates = rates;
         this.caches = caches;
         this.jdbc = jdbc;
@@ -47,7 +44,9 @@ class RateStorageTests {
 
     @BeforeEach
     void rememberTheSeededRates() {
-        seeded = jdbc.sql("SELECT currency, units_per_eur, as_of FROM exchange_rates").query().listOfRows();
+        seeded = jdbc.sql("SELECT currency, units_per_eur, as_of FROM exchange_rates")
+                .query()
+                .listOfRows();
     }
 
     @AfterEach
@@ -73,7 +72,8 @@ class RateStorageTests {
                         .isNotNull());
 
         BigDecimal fresh = before.add(BigDecimal.ONE);
-        boolean changed = rates.store(Map.of(CurrencyCode.CZK, fresh), Instant.now().plusSeconds(60));
+        boolean changed =
+                rates.store(Map.of(CurrencyCode.CZK, fresh), Instant.now().plusSeconds(60));
 
         assertThat(changed).isTrue();
         assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo(fresh);

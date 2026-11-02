@@ -41,10 +41,7 @@ class UserAccounts implements UserDirectory {
     private final String unknownUserHash;
 
     UserAccounts(
-            UserAccountRepository users,
-            PasswordEncoder passwords,
-            Clock clock,
-            ApplicationEventPublisher events) {
+            UserAccountRepository users, PasswordEncoder passwords, Clock clock, ApplicationEventPublisher events) {
         this.users = users;
         this.events = events;
         this.passwords = passwords;

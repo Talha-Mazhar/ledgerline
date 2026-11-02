@@ -13,8 +13,8 @@ import com.ledgerline.ApiScenario;
 import com.ledgerline.TestUsers;
 import com.ledgerline.TestcontainersConfiguration;
 import com.ledgerline.identity.SignedInUser;
-import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +54,15 @@ class NotificationApiTests {
         scenario.send(sender, euros, recipient.email(), "25").andExpect(status().isCreated());
 
         // Compared as text, so a failure shows every notification the recipient has.
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(mvc.perform(
-                                get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString(StandardCharsets.UTF_8))
-                .contains("\"unread\":2")
-                .contains("\"title\":\"Money received\",\"body\":\"Nina Notify sent you €25.00.\"")
-                .contains("Welcome to Ledgerline"));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> assertThat(
+                                mvc.perform(get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
+                                        .andReturn()
+                                        .getResponse()
+                                        .getContentAsString(StandardCharsets.UTF_8))
+                        .contains("\"unread\":2")
+                        .contains("\"title\":\"Money received\",\"body\":\"Nina Notify sent you €25.00.\"")
+                        .contains("Welcome to Ledgerline"));
 
         mvc.perform(get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
                 .andExpect(status().isOk())
@@ -74,12 +75,13 @@ class NotificationApiTests {
                 .andExpect(jsonPath("$.unread").value(0))
                 .andExpect(jsonPath("$.items[0].read").value(true));
 
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(mvc.perform(
-                                get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString(StandardCharsets.UTF_8))
-                .contains("\"title\":\"Money sent\",\"body\":\"You sent €25.00 to Rita Receive.\""));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> assertThat(
+                                mvc.perform(get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
+                                        .andReturn()
+                                        .getResponse()
+                                        .getContentAsString(StandardCharsets.UTF_8))
+                        .contains("\"title\":\"Money sent\",\"body\":\"You sent €25.00 to Rita Receive.\""));
     }
 
     @Test
@@ -89,14 +91,19 @@ class NotificationApiTests {
         String euros = scenario.openWallet(sender, "EUR");
         scenario.openWallet(recipient, "EUR");
         scenario.deposit(sender, euros, "3000");
-        scenario.send(sender, euros, recipient.email(), "1500").andExpect(jsonPath("$.status").value("HELD"));
+        scenario.send(sender, euros, recipient.email(), "1500")
+                .andExpect(jsonPath("$.status").value("HELD"));
 
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> mvc.perform(
-                        get("/api/v1/notifications").param("limit", "100").with(TestUsers.signedInAs(TestUsers.SUPPORT)))
-                .andExpect(jsonPath("$.items[?(@.body == \"Hugo Hold's transfer of €1,500.00 is waiting for two approvals.\")]")
-                        .exists()));
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> mvc.perform(
-                        get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
-                .andExpect(jsonPath("$.items[?(@.title == 'Payment waiting for approval')]").exists()));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> mvc.perform(get("/api/v1/notifications")
+                                .param("limit", "100")
+                                .with(TestUsers.signedInAs(TestUsers.SUPPORT)))
+                        .andExpect(jsonPath(
+                                        "$.items[?(@.body == \"Hugo Hold's transfer of €1,500.00 is waiting for two approvals.\")]")
+                                .exists()));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> mvc.perform(get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
+                        .andExpect(jsonPath("$.items[?(@.title == 'Payment waiting for approval')]")
+                                .exists()));
     }
 }

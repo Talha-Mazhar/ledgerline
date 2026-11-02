@@ -54,14 +54,19 @@ class Refunds {
         if (original.kind() == PaymentKind.TRANSFER) {
             backTo = Objects.requireNonNull(original.fromWalletId(), "a transfer has a source wallet");
             String sender = users.require(original.initiatedBy()).displayName();
-            String recipient = users.require(Objects.requireNonNull(original.counterpartyId())).displayName();
-            legs = List.of(new Leg(payee, amount.negate(), "Refund to " + sender), new Leg(backTo, amount, "Refund from " + recipient));
+            String recipient = users.require(Objects.requireNonNull(original.counterpartyId()))
+                    .displayName();
+            legs = List.of(
+                    new Leg(payee, amount.negate(), "Refund to " + sender),
+                    new Leg(backTo, amount, "Refund from " + recipient));
         } else {
             backTo = ledger.systemAccount(SystemAccount.FUNDING, amount.currency());
-            legs = List.of(new Leg(payee, amount.negate(), "Top-up refunded to card"), new Leg(backTo, amount, "Card refund"));
+            legs = List.of(
+                    new Leg(payee, amount.negate(), "Top-up refunded to card"), new Leg(backTo, amount, "Card refund"));
         }
         String key = "refund-" + original.id();
-        PostedEntry posted = ledger.post(new JournalEntry(EntryKind.REFUND, staff, key, "REFUND|" + original.id(), legs));
+        PostedEntry posted =
+                ledger.post(new JournalEntry(EntryKind.REFUND, staff, key, "REFUND|" + original.id(), legs));
 
         Payment refund = book.save(Payment.request(
                         PaymentKind.REFUND,

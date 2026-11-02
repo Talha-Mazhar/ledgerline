@@ -60,7 +60,9 @@ class MoneyMovements {
                 userId,
                 idempotencyKey.toString(),
                 fingerprint,
-                List.of(new Leg(funding, amount.negate(), "Card top-up"), new Leg(wallet.id(), amount, "Added money"))));
+                List.of(
+                        new Leg(funding, amount.negate(), "Card top-up"),
+                        new Leg(wallet.id(), amount, "Added money"))));
         if (!posted.replayed()) {
             Payment payment = book.save(Payment.request(
                             PaymentKind.DEPOSIT,
@@ -123,7 +125,8 @@ class MoneyMovements {
                     amount,
                     book.now());
             if (decision.hold()) {
-                book.publish(book.held(book.save(payment.held(posted.entryId(), String.join(" ", decision.reasons())))));
+                book.publish(
+                        book.held(book.save(payment.held(posted.entryId(), String.join(" ", decision.reasons())))));
             } else {
                 book.publish(book.completed(book.save(payment.recorded(posted.entryId()))));
             }

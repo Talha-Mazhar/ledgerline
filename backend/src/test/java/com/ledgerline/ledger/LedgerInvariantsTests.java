@@ -116,6 +116,10 @@ class LedgerInvariantsTests {
         Money money = new Money(amount, CurrencyCode.EUR);
         String key = UUID.randomUUID().toString();
         return new JournalEntry(
-                kind, by, key, kind + "|" + key, List.of(new Leg(from, money.negate(), "out"), new Leg(to, money, "in")));
+                kind,
+                by,
+                key,
+                kind + "|" + key,
+                List.of(new Leg(from, money.negate(), "out"), new Leg(to, money, "in")));
     }
 }

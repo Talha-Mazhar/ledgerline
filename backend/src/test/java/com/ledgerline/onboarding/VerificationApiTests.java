@@ -1,8 +1,8 @@
 package com.ledgerline.onboarding;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers.openApi;
 import static com.ledgerline.ApiRequests.post;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -78,8 +78,8 @@ class VerificationApiTests {
                 .andExpect(jsonPath("$.status").value("PENDING_REVIEW"))
                 .andExpect(jsonPath("$.documentName").value("passport.pdf"));
 
-        String queue = mvc.perform(get("/api/v1/back-office/verifications")
-                        .with(TestUsers.signedInAs(TestUsers.SUPPORT)))
+        String queue = mvc.perform(
+                        get("/api/v1/back-office/verifications").with(TestUsers.signedInAs(TestUsers.SUPPORT)))
                 .andExpect(status().isOk())
                 .andExpect(openApi().isValid(CONTRACT))
                 .andReturn()
@@ -113,7 +113,9 @@ class VerificationApiTests {
                 .andExpect(jsonPath("$.status").value("REJECTED"))
                 .andExpect(jsonPath("$.rejectionReason").value("The photo is too blurry to read."));
 
-        upload(PDF, "sharp.pdf").andExpect(status().isAccepted()).andExpect(jsonPath("$.status").value("PENDING_REVIEW"));
+        upload(PDF, "sharp.pdf")
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("PENDING_REVIEW"));
     }
 
     @Test

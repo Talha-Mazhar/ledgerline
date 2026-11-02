@@ -54,7 +54,10 @@ class StatementController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment().filename(fileName).build().toString())
+                        ContentDisposition.attachment()
+                                .filename(fileName)
+                                .build()
+                                .toString())
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(pdf.render(statement));
     }

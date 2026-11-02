@@ -49,7 +49,8 @@ class JdbcExchangeRates implements ExchangeRates {
             return amount;
         }
         BigDecimal mid = rate(amount.currency(), currency).midRate();
-        return new Money(amount.amount().multiply(mid).setScale(currency.minorUnits(), RoundingMode.HALF_EVEN), currency);
+        return new Money(
+                amount.amount().multiply(mid).setScale(currency.minorUnits(), RoundingMode.HALF_EVEN), currency);
     }
 
     /**

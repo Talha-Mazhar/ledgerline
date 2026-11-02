@@ -104,7 +104,10 @@ class StatementApiTests {
                 .andExpect(jsonPath("$.items[0].month").value(thisMonth().toString()))
                 .andExpect(openApi().isValid(CONTRACT));
 
-        byte[] pdf = mvc.perform(get("/api/v1/wallets/{id}/statements/{month}", euros, thisMonth().toString())
+        byte[] pdf = mvc.perform(get(
+                                "/api/v1/wallets/{id}/statements/{month}",
+                                euros,
+                                thisMonth().toString())
                         .with(TestUsers.signedInAs(customer)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
@@ -125,7 +128,10 @@ class StatementApiTests {
 
     @Test
     void someoneElsesWalletHasNoStatements() throws Exception {
-        mvc.perform(get("/api/v1/wallets/{id}/statements/{month}", euros, thisMonth().toString())
+        mvc.perform(get(
+                                "/api/v1/wallets/{id}/statements/{month}",
+                                euros,
+                                thisMonth().toString())
                         .with(TestUsers.signedInAs(TestUsers.JANA)))
                 .andExpect(status().isNotFound());
     }
@@ -137,12 +143,13 @@ class StatementApiTests {
         assertThat(job.archive(thisMonth())).isPositive();
 
         assertThat(documents.get(MonthlyStatementJob.key(wallet, thisMonth()))).isPresent();
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(jdbc.sql(
-                                "SELECT COUNT(*) FROM notifications WHERE user_id = :user AND kind = 'STATEMENT_READY'")
-                        .param("user", customer.id())
-                        .query(Integer.class)
-                        .single())
-                .isEqualTo(1));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> assertThat(jdbc.sql(
+                                        "SELECT COUNT(*) FROM notifications WHERE user_id = :user AND kind = 'STATEMENT_READY'")
+                                .param("user", customer.id())
+                                .query(Integer.class)
+                                .single())
+                        .isEqualTo(1));
     }
 
     private static YearMonth thisMonth() {

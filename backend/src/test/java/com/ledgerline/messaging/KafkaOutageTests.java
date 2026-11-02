@@ -67,16 +67,18 @@ class KafkaOutageTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
 
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(waitingTransferEvents(sender))
-                .as("the event is stored, not lost")
-                .isEqualTo(1));
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(() -> assertThat(waitingTransferEvents(sender))
+                        .as("the event is stored, not lost")
+                        .isEqualTo(1));
         assertThat(notificationsOf(recipient, "MONEY_RECEIVED")).isZero();
 
         kafka.up();
         outbox.resubmitIncompletePublications(publication -> true);
 
         await().atMost(Duration.ofSeconds(30))
-                .untilAsserted(() -> assertThat(notificationsOf(recipient, "MONEY_RECEIVED")).isEqualTo(1));
+                .untilAsserted(() ->
+                        assertThat(notificationsOf(recipient, "MONEY_RECEIVED")).isEqualTo(1));
         assertThat(waitingTransferEvents(sender)).isZero();
     }
 

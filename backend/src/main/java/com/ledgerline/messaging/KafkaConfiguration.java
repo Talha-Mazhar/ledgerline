@@ -73,7 +73,10 @@ class KafkaConfiguration {
     @Bean
     KafkaAdmin.NewTopics ledgerlineTopics(@Value("${ledgerline.kafka.replication-factor:1}") short replicationFactor) {
         return new KafkaAdmin.NewTopics(Topics.ALL.stream()
-                .map(name -> TopicBuilder.name(name).partitions(3).replicas(replicationFactor).build())
+                .map(name -> TopicBuilder.name(name)
+                        .partitions(3)
+                        .replicas(replicationFactor)
+                        .build())
                 .toArray(NewTopic[]::new));
     }
 

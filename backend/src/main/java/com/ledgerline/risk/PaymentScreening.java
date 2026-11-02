@@ -33,9 +33,8 @@ public class PaymentScreening {
     public ScreeningDecision screen(ScreeningRequest request) {
         RiskProperties.TierLimits limits = limitsFor(request.customerId());
         BigDecimal amount = inEuros(request.amount());
-        BigDecimal earlier = request.sentLast24Hours().stream()
-                .map(this::inEuros)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal earlier =
+                request.sentLast24Hours().stream().map(this::inEuros).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<String> reasons = new ArrayList<>();
         if (amount.compareTo(limits.singlePayment()) > 0) {

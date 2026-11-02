@@ -33,9 +33,7 @@ class UserAccountsTests {
 
     @Test
     void findsUsersByPartOfTheirNameOrEmail() {
-        assertThat(accounts.search("NOVÁK", 50))
-                .extracting(UserSummary::email)
-                .containsExactly("jana@ledgerline.dev");
+        assertThat(accounts.search("NOVÁK", 50)).extracting(UserSummary::email).containsExactly("jana@ledgerline.dev");
         assertThat(accounts.search("ledgerline.dev", 50)).hasSizeGreaterThanOrEqualTo(4);
     }
 

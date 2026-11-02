@@ -21,7 +21,13 @@ class Inbox {
 
     /** One notification as the user sees it. */
     record Item(
-            UUID id, String kind, String title, String body, @Nullable String link, Instant createdAt, boolean read) {}
+            UUID id,
+            String kind,
+            String title,
+            String body,
+            @Nullable String link,
+            Instant createdAt,
+            boolean read) {}
 
     private final JdbcClient jdbc;
     private final Clock clock;

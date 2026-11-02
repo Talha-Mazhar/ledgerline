@@ -80,12 +80,15 @@ class PaymentController {
             case DEPOSIT -> "Added money";
             case WITHDRAWAL -> "Withdrawal to bank";
             case EXCHANGE -> "Currency exchange";
-            case TRANSFER -> mine ? "Sent to " + name(payment.counterpartyId()) : "Received from " + name(payment.initiatedBy());
+            case TRANSFER ->
+                mine ? "Sent to " + name(payment.counterpartyId()) : "Received from " + name(payment.initiatedBy());
             case REFUND -> "Refund";
         };
     }
 
     private String name(@Nullable UUID user) {
-        return user == null ? "someone" : users.find(user).map(UserSummary::displayName).orElse("a former user");
+        return user == null
+                ? "someone"
+                : users.find(user).map(UserSummary::displayName).orElse("a former user");
     }
 }

@@ -1,5 +1,7 @@
 package com.ledgerline.ledger;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,8 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,7 +128,8 @@ class JdbcLedger implements Ledger {
             outcome = "insufficient-funds";
             throw refused;
         } finally {
-            sample.stop(metrics.timer("ledgerline.ledger.posts", "kind", entry.kind().name(), "outcome", outcome));
+            sample.stop(metrics.timer(
+                    "ledgerline.ledger.posts", "kind", entry.kind().name(), "outcome", outcome));
         }
     }
 

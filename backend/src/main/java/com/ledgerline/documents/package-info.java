@@ -4,7 +4,9 @@
  * S3-compatible store) in production. Depends on no other module.
  */
 @NullMarked
-@ApplicationModule(displayName = "Documents", allowedDependencies = {})
+@ApplicationModule(
+        displayName = "Documents",
+        allowedDependencies = {})
 package com.ledgerline.documents;
 
 import org.jspecify.annotations.NullMarked;

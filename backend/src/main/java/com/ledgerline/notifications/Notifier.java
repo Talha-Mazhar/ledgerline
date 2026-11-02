@@ -22,7 +22,8 @@ class Notifier {
         this.users = users;
     }
 
-    void tell(UUID userId, UUID eventId, String kind, String title, String body, @Nullable String link, boolean byEmail) {
+    void tell(
+            UUID userId, UUID eventId, String kind, String title, String body, @Nullable String link, boolean byEmail) {
         boolean isNew = inbox.add(new Notice(userId, eventId, kind, title, body, link));
         if (isNew && byEmail) {
             users.find(userId).ifPresent(user -> email.send(user.email(), title, body));

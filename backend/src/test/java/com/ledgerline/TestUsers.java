@@ -17,10 +17,7 @@ public final class TestUsers {
     public static final String PASSWORD = "ledgerline-demo";
 
     public static final SignedInUser DEMO = new SignedInUser(
-            UUID.fromString("00000000-0000-4000-8000-000000000001"),
-            "demo@ledgerline.dev",
-            "Demo user",
-            Role.CUSTOMER);
+            UUID.fromString("00000000-0000-4000-8000-000000000001"), "demo@ledgerline.dev", "Demo user", Role.CUSTOMER);
 
     public static final SignedInUser JANA = new SignedInUser(
             UUID.fromString("00000000-0000-4000-8000-000000000002"),
@@ -35,10 +32,7 @@ public final class TestUsers {
             Role.SUPPORT);
 
     public static final SignedInUser ADMIN = new SignedInUser(
-            UUID.fromString("00000000-0000-4000-8000-000000000004"),
-            "admin@ledgerline.dev",
-            "Alex Admin",
-            Role.ADMIN);
+            UUID.fromString("00000000-0000-4000-8000-000000000004"), "admin@ledgerline.dev", "Alex Admin", Role.ADMIN);
 
     /** The authentication a session holds for this user, with the authority of their role. */
     public static Authentication authenticationOf(SignedInUser user) {

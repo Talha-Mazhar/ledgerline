@@ -56,8 +56,9 @@ class MoneyTools {
                 .toList();
     }
 
-    @Tool(description = "The customer's activity between two dates (inclusive), oldest first: date, "
-            + "currency, description and signed amount (negative is money out).")
+    @Tool(
+            description = "The customer's activity between two dates (inclusive), oldest first: date, "
+                    + "currency, description and signed amount (negative is money out).")
     List<Line> activity(
             @ToolParam(description = "First day, as YYYY-MM-DD") String fromDate,
             @ToolParam(description = "Last day, as YYYY-MM-DD") String toDate) {
@@ -70,9 +71,10 @@ class MoneyTools {
                 .toList();
     }
 
-    @Tool(description = "Totals between two dates (inclusive): money in and out per currency, and the "
-            + "outgoing money grouped by description, largest first. Use this for questions like "
-            + "'where did my money go'.")
+    @Tool(
+            description = "Totals between two dates (inclusive): money in and out per currency, and the "
+                    + "outgoing money grouped by description, largest first. Use this for questions like "
+                    + "'where did my money go'.")
     Summary summary(
             @ToolParam(description = "First day, as YYYY-MM-DD") String fromDate,
             @ToolParam(description = "Last day, as YYYY-MM-DD") String toDate) {
@@ -121,7 +123,8 @@ class MoneyTools {
 
     private static Map<String, String> strings(Map<CurrencyCode, BigDecimal> totals) {
         Map<String, String> out = new LinkedHashMap<>();
-        totals.forEach((currency, total) -> out.put(currency.name(), total.setScale(currency.minorUnits()).toPlainString()));
+        totals.forEach((currency, total) ->
+                out.put(currency.name(), total.setScale(currency.minorUnits()).toPlainString()));
         return out;
     }
 }

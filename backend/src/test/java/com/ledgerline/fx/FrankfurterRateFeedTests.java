@@ -27,7 +27,8 @@ class FrankfurterRateFeedTests {
              "rates":{"CZK":24.31,"GBP":0.8612,"USD":1.0874,"JPY":160.1}}""";
 
     private final RestClient.Builder builder = RestClient.builder().baseUrl("https://feed.test");
-    private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    private final MockRestServiceServer server =
+            MockRestServiceServer.bindTo(builder).build();
     private final FrankfurterRateFeed feed = new FrankfurterRateFeed(builder.build(), Duration.ofMillis(1));
 
     @Test

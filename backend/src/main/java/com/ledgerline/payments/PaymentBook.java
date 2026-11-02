@@ -75,7 +75,12 @@ class PaymentBook {
 
     /** Counts payments by kind and status (Prometheus: {@code ledgerline_payments_total}). */
     void count(Payment payment) {
-        metrics.counter("ledgerline.payments", "kind", payment.kind().name(), "status", payment.status().name())
+        metrics.counter(
+                        "ledgerline.payments",
+                        "kind",
+                        payment.kind().name(),
+                        "status",
+                        payment.status().name())
                 .increment();
     }
 

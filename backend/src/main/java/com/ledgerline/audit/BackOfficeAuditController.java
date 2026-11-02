@@ -52,6 +52,8 @@ class BackOfficeAuditController {
     }
 
     private @Nullable String actorName(@Nullable UUID actor) {
-        return actor == null ? null : users.find(actor).map(UserSummary::displayName).orElse(null);
+        return actor == null
+                ? null
+                : users.find(actor).map(UserSummary::displayName).orElse(null);
     }
 }

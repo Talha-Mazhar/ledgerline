@@ -1,8 +1,8 @@
 package com.ledgerline.identity;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers.openApi;
 import static com.ledgerline.ApiRequests.post;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,8 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.ledgerline.TestUsers;
 import com.ledgerline.TestcontainersConfiguration;
-import java.nio.file.Path;
 import jakarta.servlet.http.Cookie;
+import java.nio.file.Path;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,8 +148,11 @@ class AuthApiTests {
     private static Cookie sessionCookie(MvcResult result) {
         Cookie session = Objects.requireNonNull(
                 result.getResponse().getCookie("LEDGERLINE_SESSION"),
-                () -> "no LEDGERLINE_SESSION cookie; Set-Cookie: " + result.getResponse().getHeaders("Set-Cookie"));
-        assertThat(session.isHttpOnly()).as("scripts can't read the session cookie").isTrue();
+                () -> "no LEDGERLINE_SESSION cookie; Set-Cookie: "
+                        + result.getResponse().getHeaders("Set-Cookie"));
+        assertThat(session.isHttpOnly())
+                .as("scripts can't read the session cookie")
+                .isTrue();
         assertThat(session.getAttribute("SameSite")).isEqualTo("Lax");
         return session;
     }

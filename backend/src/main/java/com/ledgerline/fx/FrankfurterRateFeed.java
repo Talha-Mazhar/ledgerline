@@ -62,10 +62,7 @@ class FrankfurterRateFeed implements RateFeed {
                         .build());
         this.retry = Retry.of(
                 "ecb-rates",
-                RetryConfig.custom()
-                        .maxAttempts(3)
-                        .waitDuration(retryWait)
-                        .build());
+                RetryConfig.custom().maxAttempts(3).waitDuration(retryWait).build());
     }
 
     private static RestClient client(RestClient.Builder builder, FxProperties properties) {
