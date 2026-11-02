@@ -35,7 +35,7 @@ data:
   {{- end }}
   {{- end }}
   LEDGERLINE_NOTIFICATIONS_EMAIL_ENABLED: {{ and $b.emailEnabled (or $infra (not (empty .Values.external.mail.host))) | quote }}
-  SERVER_SERVLET_SESSION_COOKIE_SECURE: {{ $b.secureCookies | quote }}
+  LEDGERLINE_SESSION_SECURE_COOKIE: {{ $b.secureCookies | quote }}
   {{- if $b.ollamaUrl }}
   SPRING_AI_OLLAMA_BASE_URL: {{ $b.ollamaUrl | quote }}
   SPRING_AI_OLLAMA_CHAT_MODEL: {{ $b.ollamaModel | quote }}

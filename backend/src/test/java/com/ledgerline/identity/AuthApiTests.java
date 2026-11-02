@@ -1,5 +1,6 @@
 package com.ledgerline.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers.openApi;
 import static com.ledgerline.ApiRequests.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -145,9 +146,12 @@ class AuthApiTests {
 
     /** The session cookie a browser would keep. Sessions live in Redis, found by this cookie. */
     private static Cookie sessionCookie(MvcResult result) {
-        return Objects.requireNonNull(
+        Cookie session = Objects.requireNonNull(
                 result.getResponse().getCookie("LEDGERLINE_SESSION"),
                 () -> "no LEDGERLINE_SESSION cookie; Set-Cookie: " + result.getResponse().getHeaders("Set-Cookie"));
+        assertThat(session.isHttpOnly()).as("scripts can't read the session cookie").isTrue();
+        assertThat(session.getAttribute("SameSite")).isEqualTo("Lax");
+        return session;
     }
 
     private static RequestBuilder signInRequest(String email, String password) {

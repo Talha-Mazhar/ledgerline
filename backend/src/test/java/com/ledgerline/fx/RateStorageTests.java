@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
@@ -32,13 +33,18 @@ class RateStorageTests {
     private final JdbcExchangeRates rates;
     private final CacheManager caches;
     private final JdbcClient jdbc;
+    private final StringRedisTemplate redis;
     private List<Map<String, @Nullable Object>> seeded = List.of();
 
     RateStorageTests(
-            @Autowired JdbcExchangeRates rates, @Autowired CacheManager caches, @Autowired JdbcClient jdbc) {
+            @Autowired JdbcExchangeRates rates,
+            @Autowired CacheManager caches,
+            @Autowired JdbcClient jdbc,
+            @Autowired StringRedisTemplate redis) {
         this.rates = rates;
         this.caches = caches;
         this.jdbc = jdbc;
+        this.redis = redis;
     }
 
     @BeforeEach
@@ -62,7 +68,7 @@ class RateStorageTests {
     void newRatesReplaceCachedOnes() {
         assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
         assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).get("EUR-CZK"))
-                .as("the rate is cached (cache manager %s, caches %s)", caches.getClass().getName(), caches.getCacheNames())
+                .as("the rate is cached (redis keys %s)", redis.keys("*"))
                 .isNotNull();
 
         boolean changed = rates.store(
