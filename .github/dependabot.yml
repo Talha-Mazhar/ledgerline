@@ -1,0 +1,65 @@
+# Weekly update pull requests, grouped so a week brings a few PRs rather than dozens.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      spring:
+        patterns: ['org.springframework*', 'io.micrometer*']
+      everything-else:
+        patterns: ['*']
+        exclude-patterns: ['org.springframework*', 'io.micrometer*']
+    commit-message: { prefix: 'build(backend)' }
+
+  - package-ecosystem: maven
+    directory: /loadtest
+    schedule: { interval: monthly }
+    groups:
+      gatling:
+        patterns: ['*']
+    commit-message: { prefix: 'build(loadtest)' }
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      dev-tools:
+        dependency-type: development
+      runtime:
+        dependency-type: production
+    commit-message: { prefix: 'build(frontend)' }
+
+  - package-ecosystem: npm
+    directories: [/, /e2e]
+    schedule: { interval: monthly }
+    groups:
+      tooling:
+        patterns: ['*']
+    commit-message: { prefix: 'build' }
+
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
+    schedule: { interval: weekly, day: monday }
+    commit-message: { prefix: 'build(docker)' }
+
+  - package-ecosystem: docker-compose
+    directories: [/, /infra]
+    schedule: { interval: monthly }
+    groups:
+      images:
+        patterns: ['*']
+    commit-message: { prefix: 'build(compose)' }
+
+  - package-ecosystem: helm
+    directory: /deploy/helm/ledgerline
+    schedule: { interval: monthly }
+    commit-message: { prefix: 'build(chart)' }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message: { prefix: 'ci' }
