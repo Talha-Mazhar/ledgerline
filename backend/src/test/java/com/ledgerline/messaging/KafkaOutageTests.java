@@ -58,6 +58,9 @@ class KafkaOutageTests {
         String sendersEuros = scenario.openWallet(sender, "EUR");
         scenario.openWallet(recipient, "EUR");
         scenario.deposit(sender, sendersEuros, "100");
+        // The top-up's event goes to Kafka after the request returns; let it arrive first.
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(() -> assertThat(waitingTransferEvents(sender)).isZero());
 
         kafka.down();
         scenario.send(sender, sendersEuros, recipient.email(), "30")

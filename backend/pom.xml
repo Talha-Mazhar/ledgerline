@@ -156,6 +156,14 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-ollama</artifactId>
+            <exclusions>
+                <!-- Only Spring AI's structured-output validation uses it, which Ledgerline doesn't.
+                     Its 3.x clashes with the 2.x the OpenAPI response checks in tests need. -->
+                <exclusion>
+                    <groupId>com.networknt</groupId>
+                    <artifactId>json-schema-validator</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.modulith</groupId>
@@ -267,6 +275,13 @@
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <!-- The version openapi-request-validator is built against; the Spring AI BOM would
+                     otherwise pick 3.x. -->
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>2.0.1</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
