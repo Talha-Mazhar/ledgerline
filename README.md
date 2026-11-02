@@ -12,7 +12,7 @@ of money is a balanced, append-only journal entry.
 | ------------- | ------------------------------------------------------------------------------------------- |
 | Backend       | Java 25, Spring Boot 4.1, Spring Modulith, Spring Security, JPA + JdbcClient, PostgreSQL 18, Flyway |
 | Messaging     | Kafka (transactional outbox, retry and dead-letter topics), Redis (sessions, cache), ShedLock |
-| Integrations  | S3/MinIO (documents, statements), Resilience4j (rate feed), Spring AI + Ollama, PDFBox, SMTP |
+| Integrations  | S3 / RustFS (documents, statements), Resilience4j (rate feed), Spring AI + Ollama, PDFBox, SMTP |
 | Frontend      | React 19, TypeScript (strict), Vite, MUI, TanStack Query, React Router, React Hook Form + zod |
 | API           | OpenAPI 3 contract; typed client and zod schemas generated from it                          |
 | Quality       | Error Prone + NullAway, Testcontainers, contract-checked API tests, Vitest + MSW, Playwright, Gatling |
@@ -96,7 +96,7 @@ that on every push. See [ADR 0012](docs/adr/0012-observability-and-deployment.md
 Prerequisites: JDK 25, Node.js 24, Docker.
 
 ```bash
-# backend: starts PostgreSQL, Kafka, Redis, MinIO and Mailpit from infra/compose.yaml, then the API on :8080
+# backend: starts PostgreSQL, Kafka, Redis, RustFS and Mailpit from infra/compose.yaml, then the API on :8080
 cd backend && ./mvnw spring-boot:run
 
 # frontend: http://localhost:5173 (forwards /api to :8080)
@@ -106,7 +106,7 @@ cd frontend && npm install && npm run dev
 Checks, the same as CI runs:
 
 ```bash
-cd backend && ./mvnw verify         # null checks, tests on real PostgreSQL/Kafka/Redis/MinIO, module boundaries, formatting
+cd backend && ./mvnw verify         # null checks, tests on real PostgreSQL/Kafka/Redis/S3, module boundaries, formatting
 cd frontend && npm run check        # types, lint, formatting, tests
 cd e2e && npx playwright test       # end-to-end, against `docker compose up`
 cd loadtest && ./mvnw gatling:test  # load test, against `docker compose up`

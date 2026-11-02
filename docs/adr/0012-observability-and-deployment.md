@@ -33,7 +33,7 @@ be deployable the same way everywhere, from a laptop to a production cluster.
   that never drops below the wanted replicas, autoscaling on CPU, pod disruption budgets, spread
   over nodes, network policies (only the frontend reaches the API; only the backend reaches the
   data stores), Ingress or Gateway API, and an optional ServiceMonitor.
-- `infrastructure.enabled` runs PostgreSQL, Kafka, Redis, MinIO and Mailpit in the cluster for a
+- `infrastructure.enabled` runs PostgreSQL, Kafka, Redis, RustFS and Mailpit in the cluster for a
   demo. `values-production.yaml` turns them off and points at managed services (RDS, MSK,
   ElastiCache, S3, SES): their replication and backups are better than anything a single chart
   would run.

@@ -27,7 +27,7 @@ jobs:
           java-version: '25'
           cache: maven
       # Compiles with Error Prone and NullAway, runs the tests against PostgreSQL, Kafka, Redis and
-      # MinIO in Testcontainers (Docker is available on GitHub's runners), checks module
+      # RustFS (S3) in Testcontainers (Docker is available on GitHub's runners), checks module
       # boundaries and formatting.
       - run: ./mvnw -B verify
       - name: Test report

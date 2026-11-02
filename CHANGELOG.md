@@ -42,7 +42,7 @@ Production-ready.
 - Domain events through a transactional outbox to Kafka, with retry topics and dead-letter topics;
   no event is lost while Kafka is down.
 - Email and in-app notifications; an append-only audit log.
-- Identity verification: documents to S3/MinIO, checked by content, reviewed by staff.
+- Identity verification: documents to S3-compatible storage, checked by content, reviewed by staff.
 
 ## [0.2.0] - 2026-11-02
 

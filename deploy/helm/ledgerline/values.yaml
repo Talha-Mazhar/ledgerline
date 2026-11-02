@@ -122,7 +122,7 @@ external:
     port: 587
     username: ""
 
-# In-cluster PostgreSQL, Kafka, Redis, MinIO and Mailpit: single replicas with persistent
+# In-cluster PostgreSQL, Kafka, Redis, RustFS (S3-compatible storage) and Mailpit: single replicas with persistent
 # volumes. Good for a demo; use managed services in production.
 infrastructure:
   enabled: true
@@ -135,8 +135,8 @@ infrastructure:
     storage: 5Gi
   redis:
     image: redis:8-alpine
-  minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    storage: 5Gi
+  storage:
+    image: rustfs/rustfs:1.0.4
+    size: 5Gi
   mailpit:
     image: axllent/mailpit:v1.33

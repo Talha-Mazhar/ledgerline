@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * End-to-end tests against the whole app running in Docker Compose (`docker compose up --wait`):
- * the real frontend, backend, PostgreSQL, Kafka, Redis and MinIO. Nothing is mocked.
+ * the real frontend, backend, PostgreSQL, Kafka, Redis and S3 storage (RustFS). Nothing is mocked.
  *
  * Each test signs up its own customer, so tests don't depend on each other's data and can run in
  * parallel against one database.

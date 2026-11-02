@@ -5,7 +5,7 @@
 #                                                   Prometheus :9090, Tempo for traces
 #   docker compose --profile ai up                + the assistant's model (Ollama, ~2 GB)
 #
-# Mailpit shows the emails the app sends: http://localhost:8025. MinIO's console: :9001.
+# Mailpit shows the emails the app sends: http://localhost:8025. The storage console (RustFS): :9001.
 # For development, run the backend and frontend from your IDE instead (see the README); they use
 # infra/compose.yaml.
 
@@ -18,7 +18,7 @@ x-backend-env: &backend-env
   SPRING_MAIL_HOST: mailpit
   SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
   SPRING_DOCKER_COMPOSE_ENABLED: "false"
-  LEDGERLINE_DOCUMENTS_ENDPOINT: http://minio:9000
+  LEDGERLINE_DOCUMENTS_ENDPOINT: http://storage:9000
   MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT: http://tempo:4318/v1/traces
 
 services:
@@ -62,20 +62,19 @@ services:
       interval: 5s
       retries: 10
 
-  minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    command: server /data --console-address ":9001"
+  # S3-compatible object storage (RustFS) for identity documents and statements.
+  storage:
+    image: rustfs/rustfs:1.0.4
+    command: ["/data"]
     environment:
-      MINIO_ROOT_USER: ledgerline
-      MINIO_ROOT_PASSWORD: ledgerline-secret
+      RUSTFS_ACCESS_KEY: ledgerline
+      RUSTFS_SECRET_KEY: ledgerline-secret
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
     ports:
       - "9001:9001"
     volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      retries: 10
+      - storage-data:/data
 
   mailpit:
     image: axllent/mailpit:v1.33
@@ -92,8 +91,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      # The backend creates its bucket when storage answers; it needn't wait for it.
+      storage:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health/readiness || exit 1"]
       interval: 10s
@@ -154,5 +154,5 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
+  storage-data:
   ollama-data:

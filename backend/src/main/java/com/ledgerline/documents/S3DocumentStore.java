@@ -20,11 +20,12 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /**
- * {@link DocumentStore} on the S3 API: MinIO locally and in the demo cluster, Amazon S3 in
- * production. MinIO is addressed path-style ({@code host/bucket/key}); Amazon S3, with no endpoint
+ * {@link DocumentStore} on the S3 API: RustFS locally and in the demo cluster, Amazon S3 in
+ * production. RustFS is addressed path-style ({@code host/bucket/key}); Amazon S3, with no endpoint
  * set, the default virtual-hosted style.
  */
 @Service
@@ -74,13 +75,25 @@ class S3DocumentStore implements DocumentStore {
             s3.createBucket(request -> request.bucket(bucket));
             log.info("Created document bucket {}", bucket);
         } catch (SdkException unavailable) {
-            // Storage being down at start-up must not stop the app; uploads fail until it's back.
+            // Storage being down at start-up must not stop the app; the first upload creates the
+            // bucket instead.
             log.warn("Document storage isn't reachable yet: {}", unavailable.getMessage());
         }
     }
 
     @Override
     public void put(String key, byte[] content, String contentType) {
+        try {
+            putObject(key, content, contentType);
+        } catch (NoSuchBucketException missing) {
+            // Storage wasn't up when the app started, so the bucket wasn't created then.
+            s3.createBucket(request -> request.bucket(bucket));
+            log.info("Created document bucket {}", bucket);
+            putObject(key, content, contentType);
+        }
+    }
+
+    private void putObject(String key, byte[] content, String contentType) {
         s3.putObject(
                 request -> request.bucket(bucket).key(key).contentType(contentType),
                 RequestBody.fromBytes(content));

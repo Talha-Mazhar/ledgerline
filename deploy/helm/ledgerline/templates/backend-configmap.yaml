@@ -15,7 +15,7 @@ data:
   SPRING_DATA_REDIS_PORT: {{ ternary 6379 .Values.external.redis.port $infra | quote }}
   SPRING_DATA_REDIS_SSL_ENABLED: {{ and (not $infra) .Values.external.redis.ssl | quote }}
   {{- if $infra }}
-  LEDGERLINE_DOCUMENTS_ENDPOINT: {{ printf "http://%s:9000" (include "ledgerline.component" (dict "root" . "component" "minio")) | quote }}
+  LEDGERLINE_DOCUMENTS_ENDPOINT: {{ printf "http://%s:9000" (include "ledgerline.component" (dict "root" . "component" "storage")) | quote }}
   LEDGERLINE_DOCUMENTS_REGION: eu-central-1
   LEDGERLINE_DOCUMENTS_BUCKET: ledgerline-documents
   SPRING_MAIL_HOST: {{ include "ledgerline.component" (dict "root" . "component" "mailpit") | quote }}

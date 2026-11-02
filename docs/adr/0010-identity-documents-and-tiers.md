@@ -11,7 +11,7 @@ but staff, or be trusted because of a file name.
 
 ## Decision
 
-- Documents go to **object storage over the S3 API**: MinIO locally and in the demo cluster, Amazon
+- Documents go to **object storage over the S3 API**: RustFS (S3-compatible, open source) locally and in the demo cluster, Amazon
   S3 in production, with credentials from the pod's role there (no keys in configuration). The
   `documents` module hides which one behind `DocumentStore`.
 - The upload is checked by its **content**: the first bytes must be a PDF, JPEG or PNG signature,

@@ -1,7 +1,7 @@
 {{- if .Values.infrastructure.enabled }}
 {{- $infra := .Values.infrastructure }}
 {{- $redis := include "ledgerline.component" (dict "root" . "component" "redis") }}
-{{- $minio := include "ledgerline.component" (dict "root" . "component" "minio") }}
+{{- $storage := include "ledgerline.component" (dict "root" . "component" "storage") }}
 {{- $mailpit := include "ledgerline.component" (dict "root" . "component" "mailpit") }}
 # Redis holds sessions and the exchange-rate cache. Nothing in it is the only copy of anything, so
 # it runs without persistence: a restart signs people out, and rates are fetched again.
@@ -65,50 +65,52 @@ spec:
   ports:
     - { name: redis, port: 6379, targetPort: redis }
 ---
-# MinIO: S3-compatible storage for KYC documents and monthly statements.
+# RustFS: S3-compatible object storage for identity documents and monthly statements.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ $minio }}
+  name: {{ $storage }}
   labels:
-    {{- include "ledgerline.componentLabels" (dict "root" . "component" "minio") | nindent 4 }}
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "storage") | nindent 4 }}
 spec:
-  serviceName: {{ $minio }}
+  serviceName: {{ $storage }}
   replicas: 1
   selector:
     matchLabels:
-      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "minio") | nindent 6 }}
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "minio") | nindent 8 }}
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 8 }}
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        # The image's rustfs user.
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile: { type: RuntimeDefault }
       containers:
-        - name: minio
-          image: {{ $infra.minio.image }}
-          args: [server, /data, --console-address, ":9001"]
+        - name: storage
+          image: {{ $infra.storage.image }}
+          args: [/data]
           env:
-            - { name: HOME, value: /tmp }
-            - name: MINIO_ROOT_USER
+            - name: RUSTFS_ACCESS_KEY
               valueFrom: { secretKeyRef: { name: {{ include "ledgerline.secretName" . }}, key: documents-access-key } }
-            - name: MINIO_ROOT_PASSWORD
+            - name: RUSTFS_SECRET_KEY
               valueFrom: { secretKeyRef: { name: {{ include "ledgerline.secretName" . }}, key: documents-secret-key } }
+            - { name: RUSTFS_CONSOLE_ENABLE, value: "true" }
+            - { name: RUSTFS_CONSOLE_ADDRESS, value: ":9001" }
           ports:
             - { name: s3, containerPort: 9000 }
             - { name: console, containerPort: 9001 }
           readinessProbe:
-            httpGet: { path: /minio/health/ready, port: s3 }
+            httpGet: { path: /health, port: s3 }
             periodSeconds: 5
           livenessProbe:
-            httpGet: { path: /minio/health/live, port: s3 }
+            httpGet: { path: /health, port: s3 }
             periodSeconds: 15
           resources:
             requests: { cpu: 50m, memory: 256Mi }
@@ -128,17 +130,17 @@ spec:
         {{- end }}
         resources:
           requests:
-            storage: {{ $infra.minio.storage }}
+            storage: {{ $infra.storage.size }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $minio }}
+  name: {{ $storage }}
   labels:
-    {{- include "ledgerline.componentLabels" (dict "root" . "component" "minio") | nindent 4 }}
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "storage") | nindent 4 }}
 spec:
   selector:
-    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "minio") | nindent 4 }}
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 4 }}
   ports:
     - { name: s3, port: 9000, targetPort: s3 }
     - { name: console, port: 9001, targetPort: console }

@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * Identity verification over HTTP, with the document stored in a real MinIO: upload, review queue,
+ * Identity verification over HTTP, with the document stored in real S3-compatible storage (RustFS): upload, review queue,
  * approval, and the higher limits that follow.
  */
 @SpringBootTest

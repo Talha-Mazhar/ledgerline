@@ -23,6 +23,6 @@ Metrics:          port 8081 of svc/{{ include "ledgerline.component" (dict "root
 Emails sent:      kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ledgerline.component" (dict "root" . "component" "mailpit") }} 8025
                   then http://localhost:8025
 
-PostgreSQL, Kafka, Redis and MinIO run inside the cluster as single replicas. That suits a demo;
+PostgreSQL, Kafka, Redis and RustFS run inside the cluster as single replicas. That suits a demo;
 for production, use managed services (values-production.yaml).
 {{- end }}

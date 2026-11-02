@@ -13,7 +13,7 @@ test('a verified customer gets higher limits', async ({ page, browser }) => {
   await page.getByRole('button', { name: 'Send for review' }).click();
   await expect(page.getByText('In review')).toBeVisible();
 
-  // The document went to S3 (MinIO); support opens the queue and approves.
+  // The document went to S3 storage; support opens the queue and approves.
   const support = await asSomeoneElse(browser, 'support@ledgerline.dev');
   await navigate(support, 'Verifications');
   await support.getByRole('button', { name: `Approve ${customer.name}` }).click();
