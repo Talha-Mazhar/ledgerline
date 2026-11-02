@@ -23,7 +23,9 @@ public abstract class DomainException extends RuntimeException {
         /** The request clashes with the current state, e.g. a wallet that already exists. 409. */
         CONFLICT,
         /** Well-formed, but a business rule forbids it, e.g. not enough money. 422. */
-        RULE_VIOLATION
+        RULE_VIOLATION,
+        /** A service the request needs is down, e.g. the assistant's model. 503. */
+        UNAVAILABLE
     }
 
     private final Kind kind;

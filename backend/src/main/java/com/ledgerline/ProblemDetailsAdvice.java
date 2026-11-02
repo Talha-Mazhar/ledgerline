@@ -27,6 +27,7 @@ class ProblemDetailsAdvice {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case CONFLICT -> HttpStatus.CONFLICT;
             case RULE_VIOLATION -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
     }
 }
