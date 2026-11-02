@@ -1,5 +1,6 @@
 package com.ledgerline.ledger;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,18 @@ public interface Ledger {
      * @throws IdempotencyKeyReusedException if the key was used before for a different request
      */
     PostedEntry post(JournalEntry entry);
+
+    /** A recorded entry and its lines, e.g. to answer a retried request the same way again. */
+    PostedEntry entry(UUID entryId);
+
+    /** An account's lines from {@code from} (inclusive) to {@code to} (exclusive), oldest first. */
+    List<StatementLine> linesBetween(UUID accountId, Instant from, Instant to);
+
+    /** Several accounts' lines in a period, oldest first, at most {@code limit} of them. */
+    List<StatementLine> linesBetween(Collection<UUID> accountIds, Instant from, Instant to, int limit);
+
+    /** An account's balance just before a moment: what a statement for a period opens with. */
+    Money balanceBefore(UUID accountId, Instant moment);
 
     /** The latest lines of the given accounts, newest first. */
     List<StatementLine> statement(Collection<UUID> accountIds, int limit);

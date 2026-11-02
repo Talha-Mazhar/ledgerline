@@ -24,14 +24,21 @@ export function post<Params extends PathParams>(
   path: string,
   resolver: HttpResponseResolver<Params>,
 ) {
-  return http.post<Params>(`${API}${path}`, (info) => {
-    if (info.request.headers.get('X-XSRF-TOKEN') !== CSRF_TOKEN) {
-      return problem(
-        403,
-        'Request refused',
-        'The request was refused. Reload the page and try again.',
-      );
-    }
-    return resolver(info);
-  });
+  return http.post<Params>(`${API}${path}`, (info) =>
+    info.request.headers.get('X-XSRF-TOKEN') === CSRF_TOKEN ? resolver(info) : refused(),
+  );
+}
+
+/** Like {@link post}, for PUT. */
+export function put<Params extends PathParams>(
+  path: string,
+  resolver: HttpResponseResolver<Params>,
+) {
+  return http.put<Params>(`${API}${path}`, (info) =>
+    info.request.headers.get('X-XSRF-TOKEN') === CSRF_TOKEN ? resolver(info) : refused(),
+  );
+}
+
+function refused() {
+  return problem(403, 'Request refused', 'The request was refused. Reload the page and try again.');
 }

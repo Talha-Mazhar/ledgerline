@@ -36,9 +36,9 @@ class AuthController {
     }
 
     /** The contract's {@code User}. */
-    record UserResponse(String id, String email, String displayName) {
+    record UserResponse(String id, String email, String displayName, Role role) {
         static UserResponse from(SignedInUser user) {
-            return new UserResponse(user.id().toString(), user.email(), user.displayName());
+            return new UserResponse(user.id().toString(), user.email(), user.displayName(), user.role());
         }
     }
 

@@ -1,0 +1,50 @@
+{{- $infra := .Values.infrastructure.enabled }}
+{{- $b := .Values.backend }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ledgerline.component" (dict "root" . "component" "backend") }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "backend") | nindent 4 }}
+data:
+  SPRING_DOCKER_COMPOSE_ENABLED: "false"
+  SPRING_DATASOURCE_URL: {{ include "ledgerline.databaseUrl" . | quote }}
+  SPRING_DATASOURCE_USERNAME: {{ ternary "ledgerline" .Values.external.database.username $infra | quote }}
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: {{ include "ledgerline.kafkaServers" . | quote }}
+  SPRING_DATA_REDIS_HOST: {{ include "ledgerline.redisHost" . | quote }}
+  SPRING_DATA_REDIS_PORT: {{ ternary 6379 .Values.external.redis.port $infra | quote }}
+  SPRING_DATA_REDIS_SSL_ENABLED: {{ and (not $infra) .Values.external.redis.ssl | quote }}
+  {{- if $infra }}
+  LEDGERLINE_DOCUMENTS_ENDPOINT: {{ printf "http://%s:9000" (include "ledgerline.component" (dict "root" . "component" "storage")) | quote }}
+  LEDGERLINE_DOCUMENTS_REGION: eu-central-1
+  LEDGERLINE_DOCUMENTS_BUCKET: ledgerline-documents
+  SPRING_MAIL_HOST: {{ include "ledgerline.component" (dict "root" . "component" "mailpit") | quote }}
+  SPRING_MAIL_PORT: "1025"
+  {{- else }}
+  LEDGERLINE_DOCUMENTS_ENDPOINT: {{ .Values.external.documents.endpoint | quote }}
+  LEDGERLINE_DOCUMENTS_REGION: {{ .Values.external.documents.region | quote }}
+  LEDGERLINE_DOCUMENTS_BUCKET: {{ .Values.external.documents.bucket | quote }}
+  SPRING_MAIL_HOST: {{ .Values.external.mail.host | quote }}
+  SPRING_MAIL_PORT: {{ .Values.external.mail.port | quote }}
+  SPRING_MAIL_USERNAME: {{ .Values.external.mail.username | quote }}
+  SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: {{ not (empty .Values.external.mail.username) | quote }}
+  SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+  LEDGERLINE_KAFKA_REPLICATION_FACTOR: {{ .Values.external.kafka.replicationFactor | quote }}
+  {{- range $name, $value := .Values.external.kafka.env }}
+  {{ $name }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  LEDGERLINE_NOTIFICATIONS_EMAIL_ENABLED: {{ and $b.emailEnabled (or $infra (not (empty .Values.external.mail.host))) | quote }}
+  LEDGERLINE_SESSION_SECURE_COOKIE: {{ $b.secureCookies | quote }}
+  {{- if $b.ollamaUrl }}
+  SPRING_AI_OLLAMA_BASE_URL: {{ $b.ollamaUrl | quote }}
+  SPRING_AI_OLLAMA_CHAT_MODEL: {{ $b.ollamaModel | quote }}
+  SPRING_AI_OLLAMA_CHAT_OPTIONS_MODEL: {{ $b.ollamaModel | quote }}
+  {{- end }}
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: {{ $b.tracingSampleRate | quote }}
+  {{- if $b.tracingEndpoint }}
+  MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT: {{ $b.tracingEndpoint | quote }}
+  {{- end }}
+  {{- range $name, $value := $b.env }}
+  {{ $name }}: {{ $value | quote }}
+  {{- end }}

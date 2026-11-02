@@ -1,0 +1,207 @@
+{{- if .Values.infrastructure.enabled }}
+{{- $infra := .Values.infrastructure }}
+{{- $redis := include "ledgerline.component" (dict "root" . "component" "redis") }}
+{{- $storage := include "ledgerline.component" (dict "root" . "component" "storage") }}
+{{- $mailpit := include "ledgerline.component" (dict "root" . "component" "mailpit") }}
+# Redis holds sessions and the exchange-rate cache. Nothing in it is the only copy of anything, so
+# it runs without persistence: a restart signs people out, and rates are fetched again.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $redis }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "redis") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "redis") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "redis") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: redis
+          image: {{ $infra.redis.image }}
+          args: ["--save", "", "--appendonly", "no", "--maxmemory", "200mb", "--maxmemory-policy", "volatile-lru"]
+          ports:
+            - { name: redis, containerPort: 6379 }
+          readinessProbe:
+            exec: { command: [redis-cli, ping] }
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: { port: redis }
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $redis }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "redis") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "redis") | nindent 4 }}
+  ports:
+    - { name: redis, port: 6379, targetPort: redis }
+---
+# RustFS: S3-compatible object storage for identity documents and monthly statements.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $storage }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "storage") | nindent 4 }}
+spec:
+  serviceName: {{ $storage }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        # The image's rustfs user.
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: storage
+          image: {{ $infra.storage.image }}
+          args: [/data]
+          env:
+            - name: RUSTFS_ACCESS_KEY
+              valueFrom: { secretKeyRef: { name: {{ include "ledgerline.secretName" . }}, key: documents-access-key } }
+            - name: RUSTFS_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: {{ include "ledgerline.secretName" . }}, key: documents-secret-key } }
+            - { name: RUSTFS_CONSOLE_ENABLE, value: "true" }
+            - { name: RUSTFS_CONSOLE_ADDRESS, value: ":9001" }
+          ports:
+            - { name: s3, containerPort: 9000 }
+            - { name: console, containerPort: 9001 }
+          readinessProbe:
+            httpGet: { path: /health, port: s3 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: s3 }
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with $infra.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $infra.storage.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $storage }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "storage") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "storage") | nindent 4 }}
+  ports:
+    - { name: s3, port: 9000, targetPort: s3 }
+    - { name: console, port: 9001, targetPort: console }
+---
+# Mailpit catches the app's emails and shows them in a web inbox (port 8025): nothing is sent out.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $mailpit }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "mailpit") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "mailpit") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "mailpit") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: mailpit
+          image: {{ $infra.mailpit.image }}
+          ports:
+            - { name: smtp, containerPort: 1025 }
+            - { name: web, containerPort: 8025 }
+          readinessProbe:
+            tcpSocket: { port: smtp }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          # Mailpit keeps its inbox in a temporary database.
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $mailpit }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "mailpit") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "mailpit") | nindent 4 }}
+  ports:
+    - { name: smtp, port: 1025, targetPort: smtp }
+    - { name: web, port: 8025, targetPort: web }
+{{- end }}

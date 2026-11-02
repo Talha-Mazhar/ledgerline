@@ -14,12 +14,28 @@ export const DEMO_USER: User = {
   id: '00000000-0000-4000-8000-000000000001',
   email: 'demo@ledgerline.dev',
   displayName: 'Demo user',
+  role: 'CUSTOMER',
 };
 
 export const JANA: User = {
   id: '00000000-0000-4000-8000-000000000002',
   email: 'jana@ledgerline.dev',
   displayName: 'Jana Nováková',
+  role: 'CUSTOMER',
+};
+
+export const SUPPORT_USER: User = {
+  id: '00000000-0000-4000-8000-000000000003',
+  email: 'support@ledgerline.dev',
+  displayName: 'Sam Support',
+  role: 'SUPPORT',
+};
+
+export const ADMIN_USER: User = {
+  id: '00000000-0000-4000-8000-000000000004',
+  email: 'admin@ledgerline.dev',
+  displayName: 'Alex Admin',
+  role: 'ADMIN',
 };
 
 let accounts: Account[] = [];
@@ -29,8 +45,33 @@ export function resetAuth(): void {
   accounts = [
     { user: DEMO_USER, password: 'ledgerline-demo' },
     { user: JANA, password: 'ledgerline-demo' },
+    { user: SUPPORT_USER, password: 'ledgerline-demo' },
+    { user: ADMIN_USER, password: 'ledgerline-demo' },
   ];
   signedIn = DEMO_USER;
+}
+
+/** Starts the test with this user signed in, e.g. a member of staff. */
+export function givenSignedInAs(user: User): void {
+  signedIn = user;
+}
+
+/** Every account, for the back office's user list. */
+export function allUsers(): User[] {
+  return accounts.map((account) => account.user);
+}
+
+/** Changes a user's role, as an admin would. */
+export function setRole(userId: string, role: User['role']): User | undefined {
+  const account = accounts.find((candidate) => candidate.user.id === userId);
+  if (account === undefined) {
+    return undefined;
+  }
+  const changed = { ...account.user, role };
+  accounts = accounts.map((candidate) =>
+    candidate === account ? { ...candidate, user: changed } : candidate,
+  );
+  return changed;
 }
 
 /** Starts the test without a session, like a first visit. */
@@ -81,6 +122,7 @@ export const authHandlers = [
       id: crypto.randomUUID(),
       email: body.email.trim().toLowerCase(),
       displayName: body.displayName.trim(),
+      role: 'CUSTOMER',
     };
     accounts.push({ user, password: body.password });
     signedIn = user;

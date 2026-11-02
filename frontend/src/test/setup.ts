@@ -5,6 +5,7 @@ import { CSRF_COOKIE, sendCsrfToken } from '@/shared/api/csrf';
 import { client } from '@/shared/api/generated/client.gen';
 import { resetAuth } from '@/test/msw/authApi';
 import { API, CSRF_TOKEN } from '@/test/msw/http';
+import { resetPayments } from '@/test/msw/paymentsApi';
 import { server } from '@/test/msw/server';
 import { resetWallets } from '@/test/msw/walletApi';
 
@@ -22,6 +23,7 @@ afterEach(() => {
   cleanup();
   server.resetHandlers();
   resetWallets();
+  resetPayments();
   resetAuth();
 });
 

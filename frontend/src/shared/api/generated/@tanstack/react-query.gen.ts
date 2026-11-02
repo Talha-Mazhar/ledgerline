@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getWallet, listActivity, listWalletActivity, listWallets, openWallet, type Options, quoteExchange, sendMoney, signIn, signOut, signUp, withdrawMoney } from '../sdk.gen';
-import type { DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
+import { approvePayment, approveVerification, askAssistant, changeUserRole, depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getLimits, getStatement, getVerification, getVerificationDocument, getWallet, listActivity, listAuditEntries, listNotifications, listPayments, listStaffPayments, listStatements, listUsers, listVerificationsToReview, listWalletActivity, listWallets, markAllNotificationsRead, markNotificationRead, openWallet, type Options, quoteExchange, refundPayment, rejectPayment, rejectVerification, sendMoney, signIn, signOut, signUp, submitVerification, withdrawMoney } from '../sdk.gen';
+import type { ApprovePaymentData, ApprovePaymentError, ApprovePaymentResponse, ApproveVerificationData, ApproveVerificationError, ApproveVerificationResponse, AskAssistantData, AskAssistantError, AskAssistantResponse, ChangeUserRoleData, ChangeUserRoleError, ChangeUserRoleResponse, DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetLimitsData, GetLimitsError, GetLimitsResponse, GetStatementData, GetStatementError, GetStatementResponse, GetVerificationData, GetVerificationDocumentData, GetVerificationDocumentError, GetVerificationDocumentResponse, GetVerificationError, GetVerificationResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAuditEntriesData, ListAuditEntriesError, ListAuditEntriesResponse, ListNotificationsData, ListNotificationsError, ListNotificationsResponse, ListPaymentsData, ListPaymentsError, ListPaymentsResponse, ListStaffPaymentsData, ListStaffPaymentsError, ListStaffPaymentsResponse, ListStatementsData, ListStatementsError, ListStatementsResponse, ListUsersData, ListUsersError, ListUsersResponse, ListVerificationsToReviewData, ListVerificationsToReviewError, ListVerificationsToReviewResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadError, MarkAllNotificationsReadResponse, MarkNotificationReadData, MarkNotificationReadError, MarkNotificationReadResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, RefundPaymentData, RefundPaymentError, RefundPaymentResponse, RejectPaymentData, RejectPaymentError, RejectPaymentResponse, RejectVerificationData, RejectVerificationError, RejectVerificationResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, SubmitVerificationData, SubmitVerificationError, SubmitVerificationResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
 
 /**
  * Create an account and sign in
@@ -305,6 +305,385 @@ export const sendMoneyMutation = (options?: Partial<Options<SendMoneyData>>): Us
     const mutationOptions: UseMutationOptions<SendMoneyResponse, SendMoneyError, Options<SendMoneyData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await sendMoney({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listUsersQueryKey = (options?: Options<ListUsersData>) => createQueryKey('listUsers', options);
+
+/**
+ * Find users by email or name
+ */
+export const listUsersOptions = (options?: Options<ListUsersData>) => queryOptions<ListUsersResponse, ListUsersError, ListUsersResponse, ReturnType<typeof listUsersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listUsers({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listUsersQueryKey(options)
+});
+
+/**
+ * Change a user's role (admins only)
+ *
+ * Takes effect the next time the user signs in.
+ */
+export const changeUserRoleMutation = (options?: Partial<Options<ChangeUserRoleData>>): UseMutationOptions<ChangeUserRoleResponse, ChangeUserRoleError, Options<ChangeUserRoleData>> => {
+    const mutationOptions: UseMutationOptions<ChangeUserRoleResponse, ChangeUserRoleError, Options<ChangeUserRoleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await changeUserRole({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listPaymentsQueryKey = (options?: Options<ListPaymentsData>) => createQueryKey('listPayments', options);
+
+/**
+ * The customer's payments, newest first
+ */
+export const listPaymentsOptions = (options?: Options<ListPaymentsData>) => queryOptions<ListPaymentsResponse, ListPaymentsError, ListPaymentsResponse, ReturnType<typeof listPaymentsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listPayments({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listPaymentsQueryKey(options)
+});
+
+export const listNotificationsQueryKey = (options?: Options<ListNotificationsData>) => createQueryKey('listNotifications', options);
+
+/**
+ * The latest notifications and how many are unread
+ */
+export const listNotificationsOptions = (options?: Options<ListNotificationsData>) => queryOptions<ListNotificationsResponse, ListNotificationsError, ListNotificationsResponse, ReturnType<typeof listNotificationsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listNotifications({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listNotificationsQueryKey(options)
+});
+
+/**
+ * Mark one notification as read
+ */
+export const markNotificationReadMutation = (options?: Partial<Options<MarkNotificationReadData>>): UseMutationOptions<MarkNotificationReadResponse, MarkNotificationReadError, Options<MarkNotificationReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkNotificationReadResponse, MarkNotificationReadError, Options<MarkNotificationReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markNotificationRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Mark every notification as read
+ */
+export const markAllNotificationsReadMutation = (options?: Partial<Options<MarkAllNotificationsReadData>>): UseMutationOptions<MarkAllNotificationsReadResponse, MarkAllNotificationsReadError, Options<MarkAllNotificationsReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkAllNotificationsReadResponse, MarkAllNotificationsReadError, Options<MarkAllNotificationsReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markAllNotificationsRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getVerificationQueryKey = (options?: Options<GetVerificationData>) => createQueryKey('getVerification', options);
+
+/**
+ * Where the customer's identity verification stands
+ */
+export const getVerificationOptions = (options?: Options<GetVerificationData>) => queryOptions<GetVerificationResponse, GetVerificationError, GetVerificationResponse, ReturnType<typeof getVerificationQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getVerification({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getVerificationQueryKey(options)
+});
+
+/**
+ * Upload an identity document for review
+ *
+ * A PDF, JPEG or PNG of up to 5 MB, checked by its content, not its name.
+ */
+export const submitVerificationMutation = (options?: Partial<Options<SubmitVerificationData>>): UseMutationOptions<SubmitVerificationResponse, SubmitVerificationError, Options<SubmitVerificationData>> => {
+    const mutationOptions: UseMutationOptions<SubmitVerificationResponse, SubmitVerificationError, Options<SubmitVerificationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await submitVerification({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getLimitsQueryKey = (options?: Options<GetLimitsData>) => createQueryKey('getLimits', options);
+
+/**
+ * What the customer may send without approval
+ */
+export const getLimitsOptions = (options?: Options<GetLimitsData>) => queryOptions<GetLimitsResponse, GetLimitsError, GetLimitsResponse, ReturnType<typeof getLimitsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLimits({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLimitsQueryKey(options)
+});
+
+export const listStaffPaymentsQueryKey = (options?: Options<ListStaffPaymentsData>) => createQueryKey('listStaffPayments', options);
+
+/**
+ * The approval queue, or payments by status
+ */
+export const listStaffPaymentsOptions = (options?: Options<ListStaffPaymentsData>) => queryOptions<ListStaffPaymentsResponse, ListStaffPaymentsError, ListStaffPaymentsResponse, ReturnType<typeof listStaffPaymentsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listStaffPayments({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listStaffPaymentsQueryKey(options)
+});
+
+/**
+ * Approve a held payment
+ *
+ * The first approval moves it to AWAITING_SECOND_APPROVAL; the second, by a different staff
+ * member, releases the money. Nobody can approve their own payment.
+ *
+ */
+export const approvePaymentMutation = (options?: Partial<Options<ApprovePaymentData>>): UseMutationOptions<ApprovePaymentResponse, ApprovePaymentError, Options<ApprovePaymentData>> => {
+    const mutationOptions: UseMutationOptions<ApprovePaymentResponse, ApprovePaymentError, Options<ApprovePaymentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await approvePayment({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Reject a held payment and return the money
+ */
+export const rejectPaymentMutation = (options?: Partial<Options<RejectPaymentData>>): UseMutationOptions<RejectPaymentResponse, RejectPaymentError, Options<RejectPaymentData>> => {
+    const mutationOptions: UseMutationOptions<RejectPaymentResponse, RejectPaymentError, Options<RejectPaymentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await rejectPayment({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Refund a completed transfer or top-up
+ */
+export const refundPaymentMutation = (options?: Partial<Options<RefundPaymentData>>): UseMutationOptions<RefundPaymentResponse, RefundPaymentError, Options<RefundPaymentData>> => {
+    const mutationOptions: UseMutationOptions<RefundPaymentResponse, RefundPaymentError, Options<RefundPaymentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await refundPayment({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listVerificationsToReviewQueryKey = (options?: Options<ListVerificationsToReviewData>) => createQueryKey('listVerificationsToReview', options);
+
+/**
+ * Identity documents waiting for review, oldest first
+ */
+export const listVerificationsToReviewOptions = (options?: Options<ListVerificationsToReviewData>) => queryOptions<ListVerificationsToReviewResponse, ListVerificationsToReviewError, ListVerificationsToReviewResponse, ReturnType<typeof listVerificationsToReviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listVerificationsToReview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listVerificationsToReviewQueryKey(options)
+});
+
+export const getVerificationDocumentQueryKey = (options: Options<GetVerificationDocumentData>) => createQueryKey('getVerificationDocument', options);
+
+/**
+ * The uploaded identity document
+ */
+export const getVerificationDocumentOptions = (options: Options<GetVerificationDocumentData>) => queryOptions<GetVerificationDocumentResponse, GetVerificationDocumentError, GetVerificationDocumentResponse, ReturnType<typeof getVerificationDocumentQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getVerificationDocument({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getVerificationDocumentQueryKey(options)
+});
+
+/**
+ * Confirm a customer's identity
+ */
+export const approveVerificationMutation = (options?: Partial<Options<ApproveVerificationData>>): UseMutationOptions<ApproveVerificationResponse, ApproveVerificationError, Options<ApproveVerificationData>> => {
+    const mutationOptions: UseMutationOptions<ApproveVerificationResponse, ApproveVerificationError, Options<ApproveVerificationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await approveVerification({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Refuse a document, with a reason for the customer
+ */
+export const rejectVerificationMutation = (options?: Partial<Options<RejectVerificationData>>): UseMutationOptions<RejectVerificationResponse, RejectVerificationError, Options<RejectVerificationData>> => {
+    const mutationOptions: UseMutationOptions<RejectVerificationResponse, RejectVerificationError, Options<RejectVerificationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await rejectVerification({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAuditEntriesQueryKey = (options?: Options<ListAuditEntriesData>) => createQueryKey('listAuditEntries', options);
+
+/**
+ * The latest back-office actions
+ */
+export const listAuditEntriesOptions = (options?: Options<ListAuditEntriesData>) => queryOptions<ListAuditEntriesResponse, ListAuditEntriesError, ListAuditEntriesResponse, ReturnType<typeof listAuditEntriesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAuditEntries({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAuditEntriesQueryKey(options)
+});
+
+export const listStatementsQueryKey = (options: Options<ListStatementsData>) => createQueryKey('listStatements', options);
+
+/**
+ * The months a wallet has statements for, newest first
+ */
+export const listStatementsOptions = (options: Options<ListStatementsData>) => queryOptions<ListStatementsResponse, ListStatementsError, ListStatementsResponse, ReturnType<typeof listStatementsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listStatements({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listStatementsQueryKey(options)
+});
+
+export const getStatementQueryKey = (options: Options<GetStatementData>) => createQueryKey('getStatement', options);
+
+/**
+ * One month's statement as a PDF
+ */
+export const getStatementOptions = (options: Options<GetStatementData>) => queryOptions<GetStatementResponse, GetStatementError, GetStatementResponse, ReturnType<typeof getStatementQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStatement({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStatementQueryKey(options)
+});
+
+/**
+ * Ask about your own money
+ *
+ * The model answers only from tools that read the signed-in customer's balances and activity.
+ *
+ */
+export const askAssistantMutation = (options?: Partial<Options<AskAssistantData>>): UseMutationOptions<AskAssistantResponse, AskAssistantError, Options<AskAssistantData>> => {
+    const mutationOptions: UseMutationOptions<AskAssistantResponse, AskAssistantError, Options<AskAssistantData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await askAssistant({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

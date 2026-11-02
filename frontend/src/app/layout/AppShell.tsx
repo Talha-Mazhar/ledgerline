@@ -15,8 +15,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { BrandMark } from '@/app/layout/BrandMark';
-import { navigationItems, type NavigationItem } from '@/app/layout/navigation';
+import { navigationFor, type NavigationItem } from '@/app/layout/navigation';
 import { useSignedInUser } from '@/features/auth/signedInUser';
+import { NotificationsBell } from '@/features/notifications/NotificationsBell';
 import { signOutMutation } from '@/shared/api/generated/@tanstack/react-query.gen';
 import { paths } from '@/shared/config/paths';
 
@@ -46,6 +47,9 @@ export function AppShell() {
             <MenuRounded />
           </IconButton>
           <BrandMark />
+          <Box sx={{ ml: 'auto' }}>
+            <NotificationsBell />
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -90,22 +94,46 @@ interface SidebarProps {
 }
 
 function Sidebar({ onNavigate }: SidebarProps) {
+  const user = useSignedInUser();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', px: 2, py: 3 }}>
-      <Box sx={{ px: 1, mb: 4 }}>
-        <BrandMark />
+      <Box
+        sx={{
+          pl: 1,
+          mb: 4,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: 'ledger.onInkMuted',
+        }}
+      >
+        <Box sx={{ color: 'ledger.onInk' }}>
+          <BrandMark />
+        </Box>
+        {/* On narrow screens the bell sits in the top bar instead. */}
+        {onNavigate === undefined && <NotificationsBell />}
       </Box>
 
-      <List
-        component="nav"
-        aria-label="Main navigation"
-        disablePadding
-        sx={{ display: 'grid', gap: 0.5 }}
-      >
-        {navigationItems.map((item) => (
-          <NavigationLink key={item.path} item={item} onNavigate={onNavigate} />
+      <Box component="nav" aria-label="Main navigation" sx={{ display: 'grid', gap: 2.5 }}>
+        {navigationFor(user.role).map((section) => (
+          <div key={section.title ?? 'main'}>
+            {section.title !== undefined && (
+              <Typography
+                variant="overline"
+                component="h2"
+                sx={{ px: 1.5, color: 'ledger.onInkMuted', letterSpacing: '0.08em' }}
+              >
+                {section.title}
+              </Typography>
+            )}
+            <List disablePadding sx={{ display: 'grid', gap: 0.5 }}>
+              {section.items.map((item) => (
+                <NavigationLink key={item.path} item={item} onNavigate={onNavigate} />
+              ))}
+            </List>
+          </div>
         ))}
-      </List>
+      </Box>
 
       <AccountFooter />
     </Box>

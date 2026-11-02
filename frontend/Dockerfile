@@ -8,9 +8,11 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 RUN npm run build
 
-# Serve: nginx with the built files. It also forwards /api to the backend, so the browser sees one
-# origin and the session and CSRF cookies work without any cross-origin setup.
-FROM nginx:1.29-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Serve: unprivileged nginx (runs as a non-root user on port 8080) with the built files. It
+# forwards /api to the backend, so the browser sees one origin and the session and CSRF cookies
+# work without cross-origin setup. BACKEND_URL is filled into the config at start-up.
+FROM nginxinc/nginx-unprivileged:1.29-alpine
+ENV BACKEND_URL=http://backend:8080
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080

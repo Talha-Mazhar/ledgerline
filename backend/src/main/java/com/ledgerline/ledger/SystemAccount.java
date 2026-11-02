@@ -11,5 +11,7 @@ public enum SystemAccount {
     /** Where withdrawn money goes. */
     PAYOUT,
     /** Buys one currency and sells another during an exchange. */
-    FX
+    FX,
+    /** Holds money that has left a wallet but waits for approval before it reaches anyone. */
+    HOLD
 }

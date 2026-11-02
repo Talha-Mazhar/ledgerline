@@ -17,6 +17,7 @@ import {
 } from '@/shared/api/generated/zod.gen';
 import { currentUser, findUser, JANA } from '@/test/msw/authApi';
 import { API, post, problem } from '@/test/msw/http';
+import { recordPayment } from '@/test/msw/paymentsApi';
 
 /**
  * A fake wallets API for tests, backed by in-memory lists. It follows api/openapi.yaml, and the
@@ -27,7 +28,12 @@ import { API, post, problem } from '@/test/msw/http';
  *
  * The wallets belong to the signed-in user. Jana, the other demo user, has EUR and CZK wallets
  * that can receive transfers; the fake doesn't track their balances.
+ *
+ * Like the backend's risk rules for a basic customer, a transfer above 1,000 is held for staff
+ * approval: the money is set aside (a HELD line) and the transfer's status is HELD.
  */
+
+const HOLD_ABOVE_CENTS = 100_000;
 
 let wallets: Wallet[] = [];
 let activity: ActivityItem[] = [];
@@ -235,9 +241,30 @@ export const walletHandlers = [
     if (cents > toCents(wallet.balance.amount)) {
       return notEnough(wallet);
     }
-    const line = move(wallet, -cents, 'TRANSFER_OUT', `Sent to ${recipient.displayName}`);
+    const held = cents > HOLD_ABOVE_CENTS;
+    const line = held
+      ? move(wallet, -cents, 'HELD', `Sent to ${recipient.displayName}, awaiting approval`)
+      : move(wallet, -cents, 'TRANSFER_OUT', `Sent to ${recipient.displayName}`);
+    const sender = currentUser();
+    const payment =
+      sender === null
+        ? undefined
+        : recordPayment({
+            customer: sender,
+            counterparty: recipient,
+            kind: 'TRANSFER',
+            amount: { amount: fromCents(cents), currency: wallet.currency },
+            description: `Sent to ${recipient.displayName}`,
+            status: held ? 'HELD' : 'COMPLETED',
+            holdReason: held ? 'Above the single-payment limit of €1,000.00' : undefined,
+          });
     return HttpResponse.json<Transfer>(
-      { activity: line, recipient: { email: recipient.email, displayName: recipient.displayName } },
+      {
+        activity: line,
+        recipient: { email: recipient.email, displayName: recipient.displayName },
+        paymentId: payment?.id ?? nextId(),
+        status: held ? 'HELD' : 'COMPLETED',
+      },
       { status: 201 },
     );
   }),

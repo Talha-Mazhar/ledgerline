@@ -5,6 +5,7 @@ import com.ledgerline.ledger.Ledger;
 import com.ledgerline.ledger.Money;
 import com.ledgerline.ledger.StatementLine;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  * the module's public {@link WalletDirectory}, so other modules find wallets through it.
  */
 @Service
-class WalletService implements WalletDirectory {
+class WalletService implements WalletDirectory, WalletReader {
 
     private final WalletRepository wallets;
     private final Ledger ledger;
@@ -101,7 +102,30 @@ class WalletService implements WalletDirectory {
         return wallets.findByOwnerIdAndCurrency(ownerId, currency).map(WalletService::toOwned);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Money> balancesOf(UUID ownerId) {
+        List<Wallet> owned = walletsOf(ownerId);
+        Map<UUID, Money> balances = balancesOf(owned);
+        return owned.stream()
+                .map(wallet -> balances.getOrDefault(wallet.id(), Money.zero(wallet.currency())))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StatementLine> activityBetween(UUID ownerId, Instant from, Instant to, int limit) {
+        List<UUID> accounts = walletsOf(ownerId).stream().map(Wallet::id).toList();
+        return ledger.linesBetween(accounts, from, to, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OwnedWallet> all() {
+        return wallets.findAll().stream().map(WalletService::toOwned).toList();
+    }
+
     private static OwnedWallet toOwned(Wallet wallet) {
-        return new OwnedWallet(wallet.id(), wallet.ownerId(), wallet.currency());
+        return new OwnedWallet(wallet.id(), wallet.ownerId(), wallet.currency(), wallet.openedAt());
     }
 }

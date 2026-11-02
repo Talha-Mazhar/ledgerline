@@ -2,6 +2,7 @@ package com.ledgerline.identity;
 
 import static com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers.openApi;
 import static com.ledgerline.ApiRequests.post;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.ledgerline.TestUsers;
 import com.ledgerline.TestcontainersConfiguration;
+import jakarta.servlet.http.Cookie;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -18,8 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,12 +73,13 @@ class AuthApiTests {
 
     @Test
     void signsInAndKeepsTheUserInTheSession() throws Exception {
-        MockHttpSession session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
+        Cookie session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
 
-        mvc.perform(get("/api/v1/auth/me").session(session))
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(TestUsers.DEMO.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Demo user"))
+                .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(openApi().isValid(CONTRACT));
     }
 
@@ -98,16 +101,13 @@ class AuthApiTests {
 
     @Test
     void signsUpAndStartsASession() throws Exception {
-        MockHttpSession session = (MockHttpSession)
-                Objects.requireNonNull(mvc.perform(signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
-                        .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.email").value("pavel@example.com"))
-                        .andExpect(openApi().isValid(CONTRACT))
-                        .andReturn()
-                        .getRequest()
-                        .getSession(false));
+        Cookie session = sessionCookie(mvc.perform(signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("pavel@example.com"))
+                .andExpect(openApi().isValid(CONTRACT))
+                .andReturn());
 
-        mvc.perform(get("/api/v1/auth/me").session(session))
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
                 .andExpect(jsonPath("$.displayName").value("Pavel Dvořák"));
         mvc.perform(signInRequest("pavel@example.com", "a-long-password")).andExpect(status().isOk());
     }
@@ -129,21 +129,32 @@ class AuthApiTests {
 
     @Test
     void signingOutEndsTheSession() throws Exception {
-        MockHttpSession session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
+        Cookie session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
 
-        mvc.perform(post("/api/v1/auth/sign-out").session(session))
+        mvc.perform(post("/api/v1/auth/sign-out").cookie(session))
                 .andExpect(status().isNoContent())
                 .andExpect(openApi().isValid(CONTRACT));
-        mvc.perform(get("/api/v1/auth/me").session(session)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
     }
 
-    private MockHttpSession signIn(String email, String password) throws Exception {
-        return (MockHttpSession) Objects.requireNonNull(mvc.perform(signInRequest(email, password))
+    private Cookie signIn(String email, String password) throws Exception {
+        return sessionCookie(mvc.perform(signInRequest(email, password))
                 .andExpect(status().isOk())
                 .andExpect(openApi().isValid(CONTRACT))
-                .andReturn()
-                .getRequest()
-                .getSession(false));
+                .andReturn());
+    }
+
+    /** The session cookie a browser would keep. Sessions live in Redis, found by this cookie. */
+    private static Cookie sessionCookie(MvcResult result) {
+        Cookie session = Objects.requireNonNull(
+                result.getResponse().getCookie("LEDGERLINE_SESSION"),
+                () -> "no LEDGERLINE_SESSION cookie; Set-Cookie: "
+                        + result.getResponse().getHeaders("Set-Cookie"));
+        assertThat(session.isHttpOnly())
+                .as("scripts can't read the session cookie")
+                .isTrue();
+        assertThat(session.getAttribute("SameSite")).isEqualTo("Lax");
+        return session;
     }
 
     private static RequestBuilder signInRequest(String email, String password) {

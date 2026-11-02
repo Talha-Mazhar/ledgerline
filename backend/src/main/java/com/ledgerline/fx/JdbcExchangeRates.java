@@ -1,17 +1,24 @@
 package com.ledgerline.fx;
 
 import com.ledgerline.ledger.CurrencyCode;
+import com.ledgerline.ledger.Money;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Rates from the {@code exchange_rates} table. Each currency is stored against the euro, so the
@@ -24,14 +31,79 @@ class JdbcExchangeRates implements ExchangeRates {
 
     static final BigDecimal SPREAD = new BigDecimal("0.005");
 
-    private final JdbcClient jdbc;
+    /** Rates are cached (Redis) for an hour, and evicted whenever new ones are stored. */
+    static final String CACHE = "fx-rates";
 
-    JdbcExchangeRates(JdbcClient jdbc) {
+    private final JdbcClient jdbc;
+    private final CacheManager caches;
+
+    JdbcExchangeRates(JdbcClient jdbc, CacheManager caches) {
         this.jdbc = jdbc;
+        this.caches = caches;
     }
 
     @Override
     @Transactional(readOnly = true)
+    public Money valueIn(Money amount, CurrencyCode currency) {
+        if (amount.currency() == currency) {
+            return amount;
+        }
+        BigDecimal mid = rate(amount.currency(), currency).midRate();
+        return new Money(
+                amount.amount().multiply(mid).setScale(currency.minorUnits(), RoundingMode.HALF_EVEN), currency);
+    }
+
+    /**
+     * Stores fresh rates and empties the cache, so the next read sees them.
+     *
+     * @return true when at least one rate is newer than the stored one
+     */
+    @Transactional
+    public boolean store(Map<CurrencyCode, BigDecimal> unitsPerEur, Instant asOf) {
+        int changed = 0;
+        for (Map.Entry<CurrencyCode, BigDecimal> rate : unitsPerEur.entrySet()) {
+            changed += jdbc.sql("""
+                            UPDATE exchange_rates SET units_per_eur = :rate, as_of = :asOf
+                            WHERE currency = :currency AND as_of < :asOf
+                            """)
+                    .param("rate", rate.getValue())
+                    .param("asOf", OffsetDateTime.ofInstant(asOf, ZoneOffset.UTC))
+                    .param("currency", rate.getKey().name())
+                    .update();
+        }
+        if (changed > 0) {
+            afterCommit(this::emptyTheCache);
+        }
+        return changed > 0;
+    }
+
+    /**
+     * Empties the cache once the new rates are committed, not before: a quote read in between
+     * would otherwise put the old rate back in the cache.
+     */
+    private void emptyTheCache() {
+        Cache cache = caches.getCache(CACHE);
+        if (cache != null) {
+            cache.invalidate();
+        }
+    }
+
+    private static void afterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE, key = "#from.name() + '-' + #to.name()")
     public Rate rate(CurrencyCode from, CurrencyCode to) {
         if (from == to) {
             throw new SameCurrencyException();

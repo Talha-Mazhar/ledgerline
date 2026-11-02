@@ -14,22 +14,106 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ledgerline-notifications
+      auto-offset-reset: earliest
+  mail:
+    host: localhost
+    port: 1025
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  session:
+    # Signed in for 30 minutes after the last request.
+    timeout: 30m
+    redis:
+      namespace: "ledgerline:session"
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1h
+      key-prefix: "ledgerline:"
+  ai:
+    # A customer is waiting for the answer: try twice, then say the assistant is unavailable.
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 500ms
+        max-interval: 2s
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: llama3.2:3b
+        options:
+          model: llama3.2:3b
+          temperature: 0.1
+  modulith:
+    events:
+      # Send events that were stored but not yet delivered (e.g. Kafka was down) again at start-up.
+      republish-outstanding-events-on-restart: true
+      externalization:
+        # One send at a time while resubmitting, so a backlog can't reorder a payment's events.
+        serialize-externalization: true
 
 server:
   port: 8080
-  servlet:
-    session:
-      timeout: 30m
-      cookie:
-        name: LEDGERLINE_SESSION
-        same-site: lax
+  # The app runs behind nginx (and an ingress in Kubernetes): trust their X-Forwarded-* headers so
+  # it knows a request came in over HTTPS.
+  forward-headers-strategy: native
 
 management:
+  # Actuator on its own port: metrics and health stay inside the cluster, never behind the public
+  # ingress, which only routes /api to port 8080.
+  server:
+    port: 8081
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:
         enabled: true
+  metrics:
+    tags:
+      application: ledgerline
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  # Metrics are scraped by Prometheus; traces go out over OTLP only where an endpoint is set
+  # (MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT in Compose and Kubernetes).
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+ledgerline:
+  fx:
+    feed-url: https://api.frankfurter.dev/v1
+    timeout: 5s
+  documents:
+    endpoint: http://localhost:9000
+    region: eu-central-1
+    bucket: ledgerline-documents
+    access-key: ledgerline
+    secret-key: ledgerline-secret
+  risk:
+    basic:
+      single-payment: 1000
+      daily: 2000
+    verified:
+      single-payment: 10000
+      daily: 25000
+    velocity-window: 10m
+    velocity-max-payments: 5
+    new-recipient-threshold: 500

@@ -5,6 +5,13 @@
 export const paths = {
   overview: '/',
   wallet: '/wallets/:walletId',
+  payments: '/payments',
+  verification: '/verification',
+  assistant: '/assistant',
+  approvals: '/back-office/approvals',
+  reviews: '/back-office/verifications',
+  users: '/back-office/users',
+  audit: '/back-office/audit',
   signIn: '/sign-in',
   signUp: '/sign-up',
 } as const;

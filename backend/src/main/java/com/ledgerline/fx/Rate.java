@@ -2,6 +2,7 @@ package com.ledgerline.fx;
 
 import com.ledgerline.ledger.CurrencyCode;
 import com.ledgerline.ledger.Money;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -13,7 +14,8 @@ import java.time.Instant;
  * @param customerRate what Ledgerline offers: the mid rate less its spread. This is the rate used
  * @param asOf when the underlying rates were set
  */
-public record Rate(CurrencyCode from, CurrencyCode to, BigDecimal midRate, BigDecimal customerRate, Instant asOf) {
+public record Rate(CurrencyCode from, CurrencyCode to, BigDecimal midRate, BigDecimal customerRate, Instant asOf)
+        implements Serializable {
 
     /** Rates are shown and applied with six decimal places. */
     public static final int SCALE = 6;

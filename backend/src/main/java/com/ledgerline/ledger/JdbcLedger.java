@@ -1,9 +1,12 @@
 package com.ledgerline.ledger;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -45,10 +48,12 @@ class JdbcLedger implements Ledger {
 
     private final JdbcClient jdbc;
     private final Clock clock;
+    private final MeterRegistry metrics;
 
-    JdbcLedger(JdbcClient jdbc, Clock clock) {
+    JdbcLedger(JdbcClient jdbc, Clock clock, MeterRegistry metrics) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     @Override
@@ -109,9 +114,26 @@ class JdbcLedger implements Ledger {
         return balances;
     }
 
+    /** Times every post (Prometheus: {@code ledgerline_ledger_posts_seconds}), by entry kind and outcome. */
     @Override
     @Transactional
     public PostedEntry post(JournalEntry entry) {
+        Timer.Sample sample = Timer.start(metrics);
+        String outcome = "error";
+        try {
+            PostedEntry posted = record(entry);
+            outcome = posted.replayed() ? "replayed" : "posted";
+            return posted;
+        } catch (InsufficientFundsException refused) {
+            outcome = "insufficient-funds";
+            throw refused;
+        } finally {
+            sample.stop(metrics.timer(
+                    "ledgerline.ledger.posts", "kind", entry.kind().name(), "outcome", outcome));
+        }
+    }
+
+    private PostedEntry record(JournalEntry entry) {
         UUID entryId = UUID.randomUUID();
         OffsetDateTime postedAt = now();
 
@@ -196,6 +218,78 @@ class JdbcLedger implements Ledger {
                 .list();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<StatementLine> linesBetween(UUID accountId, Instant from, Instant to) {
+        return linesBetween(List.of(accountId), from, to, Integer.MAX_VALUE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StatementLine> linesBetween(Collection<UUID> accountIds, Instant from, Instant to, int limit) {
+        if (accountIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql("""
+                        SELECT p.id, p.entry_id, e.kind, p.account_id, p.amount, p.currency,
+                               p.balance_after, p.memo, e.posted_at
+                        FROM postings p
+                        JOIN journal_entries e ON e.id = p.entry_id
+                        WHERE p.account_id IN (:ids) AND e.posted_at >= :from AND e.posted_at < :to
+                        ORDER BY p.seq
+                        LIMIT :limit
+                        """)
+                .param("ids", accountIds)
+                .param("from", OffsetDateTime.ofInstant(from, ZoneOffset.UTC))
+                .param("to", OffsetDateTime.ofInstant(to, ZoneOffset.UTC))
+                .param("limit", limit)
+                .query(JdbcLedger::statementLine)
+                .list();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Money balanceBefore(UUID accountId, Instant moment) {
+        record Account(CurrencyCode currency, BigDecimal balance) {}
+        Account account = jdbc.sql("""
+                        SELECT a.currency,
+                               COALESCE((SELECT p.balance_after FROM postings p
+                                         JOIN journal_entries e ON e.id = p.entry_id
+                                         WHERE p.account_id = a.id AND e.posted_at < :moment
+                                         ORDER BY p.seq DESC LIMIT 1), 0) AS balance
+                        FROM ledger_accounts a WHERE a.id = :id
+                        """)
+                .param("id", accountId)
+                .param("moment", OffsetDateTime.ofInstant(moment, ZoneOffset.UTC))
+                .query((rs, row) -> new Account(currency(rs), rs.getBigDecimal("balance")))
+                .single();
+        return new Money(account.balance(), account.currency());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostedEntry entry(UUID entryId) {
+        List<StatementLine> lines = linesOf(entryId);
+        if (lines.isEmpty()) {
+            throw new IllegalArgumentException("No journal entry " + entryId);
+        }
+        return new PostedEntry(entryId, true, lines);
+    }
+
+    private List<StatementLine> linesOf(UUID entryId) {
+        return jdbc.sql("""
+                        SELECT p.id, p.entry_id, e.kind, p.account_id, p.amount, p.currency,
+                               p.balance_after, p.memo, e.posted_at
+                        FROM postings p
+                        JOIN journal_entries e ON e.id = p.entry_id
+                        WHERE p.entry_id = :entryId
+                        ORDER BY p.seq
+                        """)
+                .param("entryId", entryId)
+                .query(JdbcLedger::statementLine)
+                .list();
+    }
+
     /** A retry: same key. Same request → the first result; different request → refused. */
     private PostedEntry replay(JournalEntry entry) {
         record Existing(UUID id, String fingerprint) {}
@@ -210,18 +304,7 @@ class JdbcLedger implements Ledger {
         if (!existing.fingerprint().equals(entry.fingerprint())) {
             throw new IdempotencyKeyReusedException();
         }
-        List<StatementLine> lines = jdbc.sql("""
-                        SELECT p.id, p.entry_id, e.kind, p.account_id, p.amount, p.currency,
-                               p.balance_after, p.memo, e.posted_at
-                        FROM postings p
-                        JOIN journal_entries e ON e.id = p.entry_id
-                        WHERE p.entry_id = :entryId
-                        ORDER BY p.seq
-                        """)
-                .param("entryId", existing.id())
-                .query(JdbcLedger::statementLine)
-                .list();
-        return new PostedEntry(existing.id(), true, lines);
+        return new PostedEntry(existing.id(), true, linesOf(existing.id()));
     }
 
     /** Locks the accounts in id order and reads their balances while the locks are held. */

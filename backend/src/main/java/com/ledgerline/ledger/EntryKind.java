@@ -9,5 +9,11 @@ public enum EntryKind {
     /** Money changed from one currency to another between the same user's wallets. */
     EXCHANGE,
     /** Money sent from one user to another. */
-    TRANSFER
+    TRANSFER,
+    /** Money set aside from a wallet while a payment waits for approval. */
+    HOLD,
+    /** Held money returned to the wallet, e.g. when staff reject the payment. */
+    RELEASE,
+    /** A completed payment reversed by staff. */
+    REFUND
 }

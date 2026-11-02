@@ -1,0 +1,28 @@
+Ledgerline {{ .Chart.AppVersion }} is installed as "{{ .Release.Name }}" in namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+
+Open the app: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else if .Values.httpRoute.enabled }}
+
+Open the app: https://{{ first .Values.httpRoute.hostnames }}
+{{- else }}
+
+Open the app:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ledgerline.component" (dict "root" . "component" "frontend") }} 8000:80
+  then http://localhost:8000
+{{- end }}
+
+Demo sign-ins (password ledgerline-demo): demo@ledgerline.dev, jana@ledgerline.dev,
+support@ledgerline.dev (back office), admin@ledgerline.dev (back office, roles).
+Change or remove these accounts before real customers use the app.
+
+Check it works:   helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+Metrics:          port 8081 of svc/{{ include "ledgerline.component" (dict "root" . "component" "backend") }}, path /actuator/prometheus
+{{- if .Values.infrastructure.enabled }}
+Emails sent:      kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ledgerline.component" (dict "root" . "component" "mailpit") }} 8025
+                  then http://localhost:8025
+
+PostgreSQL, Kafka, Redis and RustFS run inside the cluster as single replicas. That suits a demo;
+for production, use managed services (values-production.yaml).
+{{- end }}

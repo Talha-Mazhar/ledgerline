@@ -5,7 +5,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
- * Request builders for API tests. A POST carries a CSRF token exactly as the frontend sends it: the
+ * Request builders for API tests. A POST, PUT or DELETE carries a CSRF token exactly as the frontend sends it: the
  * {@code XSRF-TOKEN} cookie and the same value in the {@code X-XSRF-TOKEN} header. Tests of the
  * CSRF protection itself use Spring's plain builder.
  *
@@ -19,6 +19,18 @@ public final class ApiRequests {
 
     public static MockHttpServletRequestBuilder post(String urlTemplate, Object... uriVariables) {
         return MockMvcRequestBuilders.post(urlTemplate, uriVariables)
+                .cookie(new Cookie("XSRF-TOKEN", TOKEN))
+                .header("X-XSRF-TOKEN", TOKEN);
+    }
+
+    public static MockHttpServletRequestBuilder put(String urlTemplate, Object... uriVariables) {
+        return MockMvcRequestBuilders.put(urlTemplate, uriVariables)
+                .cookie(new Cookie("XSRF-TOKEN", TOKEN))
+                .header("X-XSRF-TOKEN", TOKEN);
+    }
+
+    public static MockHttpServletRequestBuilder delete(String urlTemplate, Object... uriVariables) {
+        return MockMvcRequestBuilders.delete(urlTemplate, uriVariables)
                 .cookie(new Cookie("XSRF-TOKEN", TOKEN))
                 .header("X-XSRF-TOKEN", TOKEN);
     }

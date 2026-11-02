@@ -1,0 +1,33 @@
+# A local kind cluster: images loaded with `kind load docker-image`, plain HTTP, one replica each.
+#
+#   kind create cluster --name ledgerline
+#   docker build -t ledgerline-backend:dev backend && docker build -t ledgerline-frontend:dev frontend
+#   kind load docker-image ledgerline-backend:dev ledgerline-frontend:dev
+#   helm install ledgerline deploy/helm/ledgerline -f deploy/helm/ledgerline/values-kind.yaml --wait
+#   kubectl port-forward svc/ledgerline-frontend 8000:80
+#
+# Then open http://localhost:8000.
+
+imageRegistry: ""
+
+backend:
+  image:
+    repository: ledgerline-backend
+    tag: dev
+    pullPolicy: Never
+  replicas: 1
+  autoscaling:
+    enabled: false
+  podDisruptionBudget: null
+  secureCookies: false
+  resources:
+    requests: { cpu: 100m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+frontend:
+  image:
+    repository: ledgerline-frontend
+    tag: dev
+    pullPolicy: Never
+  replicas: 1
+  podDisruptionBudget: null

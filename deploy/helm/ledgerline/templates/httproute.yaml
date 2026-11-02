@@ -1,0 +1,19 @@
+{{- if .Values.httpRoute.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "ledgerline.fullname" . }}
+  labels:
+    {{- include "ledgerline.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- required "httpRoute.parentRefs names the Gateway to attach to" .Values.httpRoute.parentRefs | toYaml | nindent 4 }}
+  hostnames:
+    {{- toYaml .Values.httpRoute.hostnames | nindent 4 }}
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: {{ include "ledgerline.component" (dict "root" . "component" "frontend") }}
+          port: 80
+{{- end }}

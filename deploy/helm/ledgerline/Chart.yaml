@@ -1,0 +1,16 @@
+apiVersion: v2
+name: ledgerline
+description: >
+  Ledgerline, a multi-currency wallet and payments app on a double-entry ledger: the Spring Boot
+  backend, the React frontend behind nginx and, for clusters without managed services, PostgreSQL,
+  Kafka, Redis, RustFS (S3-compatible storage) and Mailpit.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://github.com/Talha-Mazhar/ledgerline
+sources:
+  - https://github.com/Talha-Mazhar/ledgerline
+maintainers:
+  - name: Talha Mazhar
+    url: https://github.com/Talha-Mazhar
+keywords: [payments, ledger, spring-boot, react]

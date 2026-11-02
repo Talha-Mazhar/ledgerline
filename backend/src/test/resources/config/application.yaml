@@ -1,0 +1,15 @@
+# Test overrides, layered on top of src/main/resources/application.yaml (Spring Boot reads
+# config/application.yaml after application.yaml, so these win).
+ledgerline:
+  notifications:
+    # No mail server in tests: notifications are still stored, emails are skipped.
+    email-enabled: false
+  scheduling:
+    # Tests call scheduled jobs directly instead of waiting for them.
+    enabled: false
+
+spring:
+  ai:
+    ollama:
+      # Nothing listens here: tests check what happens when the assistant's model is down.
+      base-url: http://localhost:1

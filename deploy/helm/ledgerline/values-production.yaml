@@ -1,0 +1,77 @@
+# Production on AWS, as an example: EKS with managed PostgreSQL (RDS), Kafka (MSK), Redis
+# (ElastiCache), S3 and SES. Every service is replicated and backed up by AWS; the chart runs only
+# the app itself.
+#
+#   helm upgrade --install ledgerline deploy/helm/ledgerline \
+#     -f deploy/helm/ledgerline/values-production.yaml \
+#     --set secrets.existingSecret=ledgerline-secrets
+#
+# The Secret (created by External Secrets from AWS Secrets Manager, or by hand) holds
+# database-password, mail-password, and documents-access-key / documents-secret-key left empty:
+# the backend reaches S3 with its pod's IAM role (EKS Pod Identity).
+
+backend:
+  replicas: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+  # SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG, the MSK SCRAM login.
+  envFromSecrets: [ledgerline-kafka-login]
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { memory: 2Gi }
+  tracingEndpoint: http://opentelemetry-collector.observability:4318/v1/traces
+  tracingSampleRate: "0.1"
+  ollamaUrl: http://ollama.ai:11434
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: topology.kubernetes.io/zone
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: backend
+
+frontend:
+  replicas: 3
+
+# The cluster's shared Gateway (e.g. Envoy Gateway or the AWS Load Balancer Controller)
+# terminates TLS for app.ledgerline.example.
+httpRoute:
+  enabled: true
+  hostnames: [app.ledgerline.example]
+  parentRefs:
+    - name: public
+      namespace: gateway
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack
+
+infrastructure:
+  enabled: false
+
+external:
+  database:
+    url: jdbc:postgresql://ledgerline.cluster-xxxx.eu-central-1.rds.amazonaws.com:5432/ledgerline?sslmode=verify-full
+    username: ledgerline
+  kafka:
+    bootstrapServers: b-1.ledgerline.xxxx.kafka.eu-central-1.amazonaws.com:9096,b-2.ledgerline.xxxx.kafka.eu-central-1.amazonaws.com:9096
+    env:
+      SPRING_KAFKA_SECURITY_PROTOCOL: SASL_SSL
+      SPRING_KAFKA_PROPERTIES_SASL_MECHANISM: SCRAM-SHA-512
+  redis:
+    host: master.ledgerline.xxxx.euc1.cache.amazonaws.com
+    port: 6379
+    ssl: true
+  documents:
+    endpoint: ""
+    region: eu-central-1
+    bucket: ledgerline-documents-prod
+  mail:
+    host: email-smtp.eu-central-1.amazonaws.com
+    port: 587
+    username: AKIA-SES-SMTP-USER
