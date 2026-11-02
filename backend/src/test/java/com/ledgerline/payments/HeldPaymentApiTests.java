@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -199,7 +200,7 @@ class HeldPaymentApiTests {
                 "$.balance.amount");
     }
 
-    private List<String> auditActionsFor(String paymentId) {
+    private List<@Nullable String> auditActionsFor(String paymentId) {
         return jdbc.sql("SELECT action FROM audit_log WHERE target_id = :id ORDER BY occurred_at")
                 .param("id", UUID.fromString(paymentId))
                 .query(String.class)

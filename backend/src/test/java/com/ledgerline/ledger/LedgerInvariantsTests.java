@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.random.RandomGenerator;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -98,7 +99,7 @@ class LedgerInvariantsTests {
         }
         assertThat(total).as("money was moved, not created").isEqualByComparingTo(START.multiply(BigDecimal.TEN));
 
-        List<BigDecimal> perCurrency = jdbc.sql("SELECT SUM(amount) FROM postings GROUP BY currency")
+        List<@Nullable BigDecimal> perCurrency = jdbc.sql("SELECT SUM(amount) FROM postings GROUP BY currency")
                 .query(BigDecimal.class)
                 .list();
         assertThat(perCurrency).allSatisfy(sum -> assertThat(sum).isEqualByComparingTo(BigDecimal.ZERO));
