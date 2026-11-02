@@ -2,6 +2,7 @@ package com.ledgerline.notifications;
 
 import static com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers.openApi;
 import static com.ledgerline.ApiRequests.post;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,6 +14,7 @@ import com.ledgerline.TestUsers;
 import com.ledgerline.TestcontainersConfiguration;
 import com.ledgerline.identity.SignedInUser;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -52,12 +54,15 @@ class NotificationApiTests {
         scenario.deposit(sender, euros, "100");
         scenario.send(sender, euros, recipient.email(), "25").andExpect(status().isCreated());
 
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> mvc.perform(
-                        get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
-                .andExpect(jsonPath("$.unread").value(2))
-                .andExpect(jsonPath("$.items[?(@.title == 'Money received')].body")
-                        .value(List.of("Nina Notify sent you €25.00.")))
-                .andExpect(jsonPath("$.items[?(@.title == 'Welcome to Ledgerline')]").exists()));
+        // Compared as text, so a failure shows every notification the recipient has.
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(mvc.perform(
+                                get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString(StandardCharsets.UTF_8))
+                .contains("\"unread\":2")
+                .contains("\"title\":\"Money received\",\"body\":\"Nina Notify sent you €25.00.\"")
+                .contains("Welcome to Ledgerline"));
 
         mvc.perform(get("/api/v1/notifications").with(TestUsers.signedInAs(recipient)))
                 .andExpect(status().isOk())

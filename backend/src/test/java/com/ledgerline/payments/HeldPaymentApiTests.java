@@ -81,7 +81,10 @@ class HeldPaymentApiTests {
         String paymentId = ApiScenario.read(sent, "$.paymentId");
         assertThat(balanceOf(bob, bobsEuros)).isEqualTo("0.00");
 
-        mvc.perform(get("/api/v1/back-office/payments").with(TestUsers.signedInAs(TestUsers.SUPPORT)))
+        // Newest first: other tests leave held payments behind in the shared database.
+        mvc.perform(get("/api/v1/back-office/payments")
+                        .param("status", "HELD")
+                        .with(TestUsers.signedInAs(TestUsers.SUPPORT)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[?(@.id == '" + paymentId + "')].holdReason")
                         .value(List.of("Above the single-payment limit of €1,000.00."

@@ -11,6 +11,7 @@ import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.ledgerline.TestUsers;
 import com.ledgerline.TestcontainersConfiguration;
 import java.nio.file.Path;
+import jakarta.servlet.http.Cookie;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,9 +72,9 @@ class AuthApiTests {
 
     @Test
     void signsInAndKeepsTheUserInTheSession() throws Exception {
-        MockHttpSession session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
+        Cookie session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
 
-        mvc.perform(get("/api/v1/auth/me").session(session))
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(TestUsers.DEMO.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Demo user"))
@@ -99,16 +100,13 @@ class AuthApiTests {
 
     @Test
     void signsUpAndStartsASession() throws Exception {
-        MockHttpSession session = (MockHttpSession)
-                Objects.requireNonNull(mvc.perform(signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
-                        .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.email").value("pavel@example.com"))
-                        .andExpect(openApi().isValid(CONTRACT))
-                        .andReturn()
-                        .getRequest()
-                        .getSession(false));
+        Cookie session = sessionCookie(mvc.perform(signUp("pavel@example.com", "Pavel Dvořák", "a-long-password"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("pavel@example.com"))
+                .andExpect(openApi().isValid(CONTRACT))
+                .andReturn());
 
-        mvc.perform(get("/api/v1/auth/me").session(session))
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
                 .andExpect(jsonPath("$.displayName").value("Pavel Dvořák"));
         mvc.perform(signInRequest("pavel@example.com", "a-long-password")).andExpect(status().isOk());
     }
@@ -130,21 +128,24 @@ class AuthApiTests {
 
     @Test
     void signingOutEndsTheSession() throws Exception {
-        MockHttpSession session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
+        Cookie session = signIn(TestUsers.DEMO.email(), TestUsers.PASSWORD);
 
-        mvc.perform(post("/api/v1/auth/sign-out").session(session))
+        mvc.perform(post("/api/v1/auth/sign-out").cookie(session))
                 .andExpect(status().isNoContent())
                 .andExpect(openApi().isValid(CONTRACT));
-        mvc.perform(get("/api/v1/auth/me").session(session)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
     }
 
-    private MockHttpSession signIn(String email, String password) throws Exception {
-        return (MockHttpSession) Objects.requireNonNull(mvc.perform(signInRequest(email, password))
+    private Cookie signIn(String email, String password) throws Exception {
+        return sessionCookie(mvc.perform(signInRequest(email, password))
                 .andExpect(status().isOk())
                 .andExpect(openApi().isValid(CONTRACT))
-                .andReturn()
-                .getRequest()
-                .getSession(false));
+                .andReturn());
+    }
+
+    /** The session cookie a browser would keep. Sessions live in Redis, found by this cookie. */
+    private static Cookie sessionCookie(MvcResult result) {
+        return Objects.requireNonNull(result.getResponse().getCookie("LEDGERLINE_SESSION"), "no session cookie");
     }
 
     private static RequestBuilder signInRequest(String email, String password) {
