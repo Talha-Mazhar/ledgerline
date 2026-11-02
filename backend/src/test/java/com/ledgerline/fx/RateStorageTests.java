@@ -68,7 +68,13 @@ class RateStorageTests {
     void newRatesReplaceCachedOnes() {
         assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
         assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).get("EUR-CZK"))
-                .as("the rate is cached (redis keys %s)", redis.keys("*"))
+                .as(
+                        "the rate is cached (redis keys %s, proxy %s, advisors %s)",
+                        redis.keys("*"),
+                        org.springframework.aop.support.AopUtils.isAopProxy(rates),
+                        rates instanceof org.springframework.aop.framework.Advised advised
+                                ? java.util.Arrays.toString(advised.getAdvisors())
+                                : "none")
                 .isNotNull();
 
         boolean changed = rates.store(
