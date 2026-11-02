@@ -31,7 +31,7 @@ class Inbox {
         this.clock = clock;
     }
 
-    /** @return true when the notification is new, false when the event was already handled */
+    /** Stores a notification; true when it is new, false when the event was already handled. */
     @Transactional
     boolean add(Notice notice) {
         return jdbc.sql("""

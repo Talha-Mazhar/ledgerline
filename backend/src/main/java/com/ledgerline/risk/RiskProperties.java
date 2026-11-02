@@ -23,6 +23,8 @@ public record RiskProperties(
         BigDecimal newRecipientThreshold) {
 
     /**
+     * The limits of one tier.
+     *
      * @param singlePayment the most one outgoing payment may be
      * @param daily the most all outgoing payments of the last 24 hours may add up to
      */

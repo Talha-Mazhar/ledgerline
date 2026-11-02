@@ -30,7 +30,7 @@ class RateRefresher {
         }
     }
 
-    /** @return true when stored rates changed */
+    /** Fetches and stores the latest rates; true when they changed. */
     boolean refresh() {
         RateFeed.Rates latest = feed.latest();
         return rates.store(latest.unitsPerEur(), latest.asOf());

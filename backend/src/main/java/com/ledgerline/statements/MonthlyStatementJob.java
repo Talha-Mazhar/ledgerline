@@ -53,7 +53,7 @@ class MonthlyStatementJob {
         log.info("Archived {} monthly statements", archived);
     }
 
-    /** @return how many statements were archived */
+    /** Archives last month's statements and returns how many there were. */
     @Transactional
     int archive(YearMonth month) {
         int archived = 0;

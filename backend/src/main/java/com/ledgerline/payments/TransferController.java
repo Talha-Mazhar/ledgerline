@@ -28,6 +28,8 @@ class TransferController {
     record RecipientResponse(String email, String displayName) {}
 
     /**
+     * A transfer as the API returns it.
+     *
      * @param status COMPLETED when the money arrived, HELD when it waits for staff approval
      */
     record TransferResponse(
