@@ -52,10 +52,18 @@ export function SendMoneyDialog({ open, from, onClose, onDone }: SendMoneyDialog
 
   const send = useMutation({
     ...sendMoneyMutation(),
-    onSuccess: async ({ activity, recipient }: Transfer) => {
+    onSuccess: async ({ activity, recipient, status }: Transfer) => {
       await queryClient.invalidateQueries();
-      const sent = { ...activity.amount, amount: activity.amount.amount.replace(/^-/, '') };
-      onDone(`${formatMoney(sent)} sent to ${recipient.displayName}`);
+      const sent = formatMoney({
+        ...activity.amount,
+        amount: activity.amount.amount.replace(/^-/, ''),
+      });
+      // A large or unusual transfer waits for our team: the money is set aside, not yet sent.
+      onDone(
+        status === 'COMPLETED'
+          ? `${sent} sent to ${recipient.displayName}`
+          : `${sent} to ${recipient.displayName} is waiting for approval. We've set it aside from your balance.`,
+      );
       close();
     },
   });

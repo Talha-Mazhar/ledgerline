@@ -21,6 +21,7 @@ import { ActivityLedger } from '@/features/activity/ActivityLedger';
 import { ExchangeDialog } from '@/features/payments/ExchangeDialog';
 import { MoveMoneyDialog, type MoveMoneyMode } from '@/features/payments/MoveMoneyDialog';
 import { SendMoneyDialog } from '@/features/payments/SendMoneyDialog';
+import { StatementsList } from '@/features/statements/StatementsList';
 import type { Wallet } from '@/shared/api/generated';
 import {
   getWalletOptions,
@@ -168,6 +169,8 @@ function WalletDetails({ wallet, back }: WalletDetailsProps) {
         error={activity.isError ? { onRetry: () => void activity.refetch() } : undefined}
         emptyMessage={`No entries yet. Money added to or sent from this ${name.toLowerCase()} wallet is recorded here.`}
       />
+
+      <StatementsList walletId={wallet.id} />
 
       <MoveMoneyDialog
         wallet={wallet}
