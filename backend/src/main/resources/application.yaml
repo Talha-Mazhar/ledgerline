@@ -14,6 +14,25 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ledgerline-notifications
+      auto-offset-reset: earliest
+  mail:
+    host: localhost
+    port: 1025
+  modulith:
+    events:
+      # Send events that were stored but not yet delivered (e.g. Kafka was down) again at start-up.
+      republish-outstanding-events-on-restart: true
+      externalization:
+        # One send at a time while resubmitting, so a backlog can't reorder a payment's events.
+        serialize-externalization: true
 
 server:
   port: 8080
@@ -33,3 +52,21 @@ management:
     health:
       probes:
         enabled: true
+
+ledgerline:
+  documents:
+    endpoint: http://localhost:9000
+    region: eu-central-1
+    bucket: ledgerline-documents
+    access-key: ledgerline
+    secret-key: ledgerline-secret
+  risk:
+    basic:
+      single-payment: 1000
+      daily: 2000
+    verified:
+      single-payment: 10000
+      daily: 25000
+    velocity-window: 10m
+    velocity-max-payments: 5
+    new-recipient-threshold: 500
