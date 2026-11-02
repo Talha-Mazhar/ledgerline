@@ -198,15 +198,14 @@ export const paymentsHandlers = [
   http.get(`${API}/verification`, () => HttpResponse.json<Verification>(verification)),
 
   post('/verification', async ({ request }) => {
-    // Not `instanceof File`: the request's File comes from Node, not from jsdom.
-    const document = (await request.formData()).get('document');
-    if (document === null || typeof document === 'string') {
-      return problem(400, 'Document missing', 'Choose a document to upload.');
-    }
+    // The upload's file name, read from the raw multipart body: parsing it as FormData depends on
+    // how the Node version under test streams jsdom's File, which differs between versions.
+    const body = await request.text().catch(() => '');
+    const documentName = /filename="([^"]+)"/.exec(body)?.[1] ?? 'document';
     verification = {
       status: 'PENDING_REVIEW',
       tier: 'BASIC',
-      documentName: document.name,
+      documentName,
       submittedAt: NOW,
     };
     return HttpResponse.json<Verification>(verification, { status: 202 });
