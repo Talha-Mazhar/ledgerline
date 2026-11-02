@@ -62,7 +62,7 @@ class RateStorageTests {
     void newRatesReplaceCachedOnes() {
         assertThat(rates.rate(CurrencyCode.EUR, CurrencyCode.CZK).midRate()).isEqualByComparingTo("25.15");
         assertThat(Objects.requireNonNull(caches.getCache(JdbcExchangeRates.CACHE)).get("EUR-CZK"))
-                .as("the rate is cached")
+                .as("the rate is cached (cache manager %s, caches %s)", caches.getClass().getName(), caches.getCacheNames())
                 .isNotNull();
 
         boolean changed = rates.store(
