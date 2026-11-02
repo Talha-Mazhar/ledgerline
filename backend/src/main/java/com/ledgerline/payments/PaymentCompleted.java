@@ -14,7 +14,7 @@ import org.springframework.modulith.events.Externalized;
  * @param payerId who the money came from (for a deposit, the wallet owner)
  * @param payeeId who received it, for transfers and refunds
  */
-@Externalized("ledgerline.payments.completed::#{#this.paymentId().toString()}")
+@Externalized("ledgerline.payments.completed")
 public record PaymentCompleted(
         UUID eventId,
         UUID paymentId,

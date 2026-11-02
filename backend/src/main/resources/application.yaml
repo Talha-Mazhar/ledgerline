@@ -39,6 +39,12 @@ spring:
       time-to-live: 1h
       key-prefix: "ledgerline:"
   ai:
+    # A customer is waiting for the answer: try twice, then say the assistant is unavailable.
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 500ms
+        max-interval: 2s
     ollama:
       base-url: http://localhost:11434
       chat:

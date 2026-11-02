@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.modulith.events.Externalized;
 
 /** Staff reversed a completed payment. */
-@Externalized("ledgerline.payments.refunded::#{#this.paymentId().toString()}")
+@Externalized("ledgerline.payments.refunded")
 public record PaymentRefunded(
         UUID eventId,
         UUID paymentId,

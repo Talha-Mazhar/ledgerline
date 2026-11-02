@@ -1,5 +1,7 @@
 package com.ledgerline.messaging;
 
+import java.lang.reflect.RecordComponent;
+import java.util.List;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +22,8 @@ import tools.jackson.databind.json.JsonMapper;
  *   <li>Every message is JSON text. Events are turned into JSON here, before Spring Modulith hands
  *       them to Kafka, so producers and consumers only ever deal with strings, and a consumer never
  *       needs the producer's Java classes.
- *   <li>Each topic has 3 partitions. Messages of one payment share a key, so they stay in order.
+ *   <li>Each topic has 3 partitions. Messages of one payment (or, for events about a person, one
+ *       user) share a key, so they stay in order.
  *       Each partition is copied to {@code ledgerline.kafka.replication-factor} brokers: 1 on a
  *       laptop, 3 on a production cluster.
  *   <li>A consumer that fails retries after 1, 2 and 4 seconds on retry topics, without blocking
@@ -38,8 +41,33 @@ class KafkaConfiguration {
     static EventExternalizationConfiguration eventExternalizationConfiguration(ObjectProvider<JsonMapper> json) {
         return EventExternalizationConfiguration.externalizing()
                 .select(EventExternalizationConfiguration.annotatedAsExternalized())
+                // The key is taken from the event before it becomes JSON text.
+                .routeKey(Record.class, KafkaConfiguration::keyOf)
                 .mapping(Object.class, event -> json.getObject().writeValueAsString(event))
                 .build();
+    }
+
+    /** The fields an event's key comes from, in order of preference. */
+    private static final List<String> KEY_FIELDS = List.of("paymentId", "userId");
+
+    /**
+     * An event's Kafka key: its payment id, or else its user id. Messages with the same key go to
+     * the same partition, so all of one payment's events, or one user's, are read in order.
+     */
+    static String keyOf(Record event) {
+        for (String field : KEY_FIELDS) {
+            for (RecordComponent component : event.getClass().getRecordComponents()) {
+                if (component.getName().equals(field)) {
+                    try {
+                        return String.valueOf(component.getAccessor().invoke(event));
+                    } catch (ReflectiveOperationException unreadable) {
+                        throw new IllegalStateException("Can't read the key of " + event, unreadable);
+                    }
+                }
+            }
+        }
+        throw new IllegalArgumentException(
+                event.getClass().getSimpleName() + " has no paymentId or userId to use as its Kafka key");
     }
 
     @Bean
