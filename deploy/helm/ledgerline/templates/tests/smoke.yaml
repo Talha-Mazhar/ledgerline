@@ -1,0 +1,37 @@
+# `helm test <release>`: the app answers through the frontend, and the backend is ready.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "ledgerline.fullname" . }}-smoke
+  labels:
+    {{- include "ledgerline.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: smoke
+      image: busybox:1.37
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: [ALL] }
+      workingDir: /tmp
+      command: [sh, -ec]
+      args:
+        - |
+          wget -qO- http://{{ include "ledgerline.component" (dict "root" . "component" "backend") }}:8081/actuator/health/readiness
+          echo
+          wget -qO /dev/null http://{{ include "ledgerline.component" (dict "root" . "component" "frontend") }}/
+          echo "frontend serves the app"
+          # Signed out, the API must answer 401: proof that nginx reaches the backend.
+          if wget -qO /dev/null http://{{ include "ledgerline.component" (dict "root" . "component" "frontend") }}/api/v1/wallets 2> err; then
+            echo "expected 401 from a signed-out request"; exit 1
+          fi
+          grep -q 401 err
+          echo "the API answers through the frontend"

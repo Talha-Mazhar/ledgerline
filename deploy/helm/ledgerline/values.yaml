@@ -1,0 +1,142 @@
+# Ledgerline's Helm values. The defaults run everything inside the cluster (infrastructure.enabled),
+# which suits a demo or a kind cluster. For production, turn that off and point `external` at
+# managed services: values-production.yaml shows how.
+
+nameOverride: ""
+fullnameOverride: ""
+
+imageRegistry: ghcr.io/talha-mazhar
+imagePullSecrets: []
+
+backend:
+  image:
+    repository: ledgerline-backend
+    # Defaults to the chart's appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { memory: 1Gi }
+  # Extra environment variables, e.g. SPRING_PROFILES_ACTIVE.
+  env: {}
+  # Secrets whose every key becomes an environment variable, e.g. Kafka's SASL login.
+  envFromSecrets: []
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    minAvailable: 1
+  # Sends traces over OTLP/HTTP when set, e.g. http://tempo.observability:4318/v1/traces.
+  tracingEndpoint: ""
+  tracingSampleRate: "0.1"
+  # Secure session and CSRF cookies; turn off only for plain-HTTP local clusters.
+  secureCookies: true
+  # Email sent to customers. Off unless an SMTP host is set (in-cluster: Mailpit).
+  emailEnabled: true
+  # The assistant's model server. Empty: the assistant answers 503 "unavailable".
+  ollamaUrl: ""
+  ollamaModel: llama3.2:3b
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+frontend:
+  image:
+    repository: ledgerline-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
+  podDisruptionBudget:
+    minAvailable: 1
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# How traffic reaches the app. Either an Ingress, or a Gateway API HTTPRoute attached to a
+# Gateway the cluster already runs. Both send everything to the frontend's nginx, which forwards
+# /api to the backend.
+ingress:
+  enabled: false
+  # Empty: the cluster's default IngressClass.
+  className: ""
+  host: ledgerline.local
+  annotations: {}
+  # e.g. [{ secretName: ledgerline-tls, hosts: [ledgerline.example.com] }]
+  tls: []
+
+httpRoute:
+  enabled: false
+  hostnames: [ledgerline.local]
+  # e.g. [{ name: public, namespace: gateway }]
+  parentRefs: []
+
+# Lets only the pods that need it talk to the backend and the data stores.
+networkPolicy:
+  enabled: true
+
+# A Prometheus Operator ServiceMonitor for the backend's /actuator/prometheus on port 8081.
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  labels: {}
+
+# Passwords. Leave empty to have the chart generate them once (kept across upgrades), or name an
+# existing Secret with the keys database-password, documents-access-key, documents-secret-key and
+# mail-password.
+secrets:
+  existingSecret: ""
+  databasePassword: ""
+  documentsAccessKey: ""
+  documentsSecretKey: ""
+  mailPassword: ""
+
+# Where the backend finds its services when infrastructure.enabled is false.
+external:
+  database:
+    url: ""            # jdbc:postgresql://host:5432/ledgerline?sslmode=require
+    username: ledgerline
+  kafka:
+    bootstrapServers: ""
+    # Copies of each partition; 3 on a production cluster.
+    replicationFactor: 3
+    # Extra Kafka client settings as environment variables, e.g. SASL for a managed cluster.
+    env: {}
+  redis:
+    host: ""
+    port: 6379
+    ssl: false
+  documents:
+    # Empty endpoint: Amazon S3 itself, with credentials from the pod's IAM role when the keys
+    # are empty too.
+    endpoint: ""
+    region: eu-central-1
+    bucket: ledgerline-documents
+  mail:
+    host: ""
+    port: 587
+    username: ""
+
+# In-cluster PostgreSQL, Kafka, Redis, MinIO and Mailpit: single replicas with persistent
+# volumes. Good for a demo; use managed services in production.
+infrastructure:
+  enabled: true
+  storageClass: ""
+  postgres:
+    image: postgres:18-alpine
+    storage: 5Gi
+  kafka:
+    image: apache/kafka:4.1.0
+    storage: 5Gi
+  redis:
+    image: redis:8-alpine
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    storage: 5Gi
+  mailpit:
+    image: axllent/mailpit:v1.33

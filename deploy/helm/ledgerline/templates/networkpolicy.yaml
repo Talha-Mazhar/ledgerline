@@ -1,0 +1,68 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . }}
+# Who may connect to what. The frontend takes traffic from the ingress controller; the backend's
+# API only from the frontend (its management port from anywhere in the cluster, for Prometheus);
+# the data stores only from the backend.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ledgerline.component" (dict "root" . "component" "frontend") }}
+  labels:
+    {{- include "ledgerline.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - { port: 8080 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ledgerline.component" (dict "root" . "component" "backend") }}
+  labels:
+    {{- include "ledgerline.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "backend") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 14 }}
+      ports:
+        - { port: 8080 }
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - { port: 8081 }
+{{- if .Values.infrastructure.enabled }}
+{{- range $store := list (dict "component" "postgres" "ports" (list 5432)) (dict "component" "kafka" "ports" (list 9092)) (dict "component" "redis" "ports" (list 6379)) (dict "component" "minio" "ports" (list 9000)) (dict "component" "mailpit" "ports" (list 1025)) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ledgerline.component" (dict "root" $root "component" $store.component) }}
+  labels:
+    {{- include "ledgerline.labels" $root | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" $root "component" $store.component) | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "ledgerline.selectorLabels" (dict "root" $root "component" "backend") | nindent 14 }}
+      ports:
+        {{- range $store.ports }}
+        - { port: {{ . }} }
+        {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

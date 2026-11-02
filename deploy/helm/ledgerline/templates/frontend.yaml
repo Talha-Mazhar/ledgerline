@@ -1,0 +1,107 @@
+{{- $f := .Values.frontend }}
+{{- $name := include "ledgerline.component" (dict "root" . "component" "frontend") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  replicas: {{ $f.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        # nginx-unprivileged's user.
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: {{ include "ledgerline.image" (dict "root" . "image" $f.image) }}
+          imagePullPolicy: {{ $f.image.pullPolicy }}
+          env:
+            # nginx forwards /api to the backend Service; the browser only sees one origin.
+            - name: BACKEND_URL
+              value: {{ printf "http://%s:8080" (include "ledgerline.component" (dict "root" . "component" "backend")) | quote }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              sleep: { seconds: 5 }
+          resources:
+            {{- toYaml $f.resources | nindent 12 }}
+          securityContext:
+            {{- include "ledgerline.containerSecurityContext" . | nindent 12 }}
+          # The root filesystem is read-only: nginx writes its config (filled in from the
+          # template at start-up), pid file and temp files to these.
+          volumeMounts:
+            - { name: conf, mountPath: /etc/nginx/conf.d }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: conf
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      {{- with $f.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $f.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $f.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+  ports:
+    - { name: http, port: 80, targetPort: http }
+{{- if $f.podDisruptionBudget }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  minAvailable: {{ $f.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+{{- end }}

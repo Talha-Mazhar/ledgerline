@@ -1,0 +1,82 @@
+{{- if .Values.infrastructure.enabled }}
+{{- $infra := .Values.infrastructure }}
+{{- $name := include "ledgerline.component" (dict "root" . "component" "postgres") }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ledgerline.selectorLabels" (dict "root" . "component" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ledgerline.selectorLabels" (dict "root" . "component" "postgres") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        # The alpine image's postgres user.
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: postgres
+          image: {{ $infra.postgres.image }}
+          env:
+            - { name: POSTGRES_DB, value: ledgerline }
+            - { name: POSTGRES_USER, value: ledgerline }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "ledgerline.secretName" . }}, key: database-password } }
+          ports:
+            - { name: postgres, containerPort: 5432 }
+          readinessProbe:
+            exec: { command: [pg_isready, -U, ledgerline, -d, ledgerline] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: [pg_isready, -U, ledgerline, -d, ledgerline] }
+            periodSeconds: 15
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql }
+            - { name: run, mountPath: /var/run/postgresql }
+      volumes:
+        - name: run
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with $infra.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $infra.postgres.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ledgerline.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ledgerline.selectorLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+  ports:
+    - { name: postgres, port: 5432, targetPort: postgres }
+{{- end }}
