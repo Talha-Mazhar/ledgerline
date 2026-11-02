@@ -1,6 +1,7 @@
 package com.ledgerline.fx;
 
 import com.ledgerline.ledger.CurrencyCode;
+import com.ledgerline.ledger.Money;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -28,6 +29,16 @@ class JdbcExchangeRates implements ExchangeRates {
 
     JdbcExchangeRates(JdbcClient jdbc) {
         this.jdbc = jdbc;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Money valueIn(Money amount, CurrencyCode currency) {
+        if (amount.currency() == currency) {
+            return amount;
+        }
+        BigDecimal mid = rate(amount.currency(), currency).midRate();
+        return new Money(amount.amount().multiply(mid).setScale(currency.minorUnits(), RoundingMode.HALF_EVEN), currency);
     }
 
     @Override

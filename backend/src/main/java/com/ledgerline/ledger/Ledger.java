@@ -33,6 +33,9 @@ public interface Ledger {
      */
     PostedEntry post(JournalEntry entry);
 
+    /** A recorded entry and its lines, e.g. to answer a retried request the same way again. */
+    PostedEntry entry(UUID entryId);
+
     /** The latest lines of the given accounts, newest first. */
     List<StatementLine> statement(Collection<UUID> accountIds, int limit);
 }

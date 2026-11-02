@@ -196,6 +196,30 @@ class JdbcLedger implements Ledger {
                 .list();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PostedEntry entry(UUID entryId) {
+        List<StatementLine> lines = linesOf(entryId);
+        if (lines.isEmpty()) {
+            throw new IllegalArgumentException("No journal entry " + entryId);
+        }
+        return new PostedEntry(entryId, true, lines);
+    }
+
+    private List<StatementLine> linesOf(UUID entryId) {
+        return jdbc.sql("""
+                        SELECT p.id, p.entry_id, e.kind, p.account_id, p.amount, p.currency,
+                               p.balance_after, p.memo, e.posted_at
+                        FROM postings p
+                        JOIN journal_entries e ON e.id = p.entry_id
+                        WHERE p.entry_id = :entryId
+                        ORDER BY p.seq
+                        """)
+                .param("entryId", entryId)
+                .query(JdbcLedger::statementLine)
+                .list();
+    }
+
     /** A retry: same key. Same request → the first result; different request → refused. */
     private PostedEntry replay(JournalEntry entry) {
         record Existing(UUID id, String fingerprint) {}
@@ -210,18 +234,7 @@ class JdbcLedger implements Ledger {
         if (!existing.fingerprint().equals(entry.fingerprint())) {
             throw new IdempotencyKeyReusedException();
         }
-        List<StatementLine> lines = jdbc.sql("""
-                        SELECT p.id, p.entry_id, e.kind, p.account_id, p.amount, p.currency,
-                               p.balance_after, p.memo, e.posted_at
-                        FROM postings p
-                        JOIN journal_entries e ON e.id = p.entry_id
-                        WHERE p.entry_id = :entryId
-                        ORDER BY p.seq
-                        """)
-                .param("entryId", existing.id())
-                .query(JdbcLedger::statementLine)
-                .list();
-        return new PostedEntry(existing.id(), true, lines);
+        return new PostedEntry(existing.id(), true, linesOf(existing.id()));
     }
 
     /** Locks the accounts in id order and reads their balances while the locks are held. */
