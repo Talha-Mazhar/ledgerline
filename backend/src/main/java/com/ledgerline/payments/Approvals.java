@@ -42,6 +42,7 @@ class Approvals {
         book.publish(new PaymentApproved(UUID.randomUUID(), payment.id(), staff, released, book.now()));
         if (released) {
             settle(payment);
+            book.count(payment);
             book.publish(book.completed(payment));
         }
         return payment;
@@ -55,6 +56,7 @@ class Approvals {
         }
         Payment payment = payments.lockById(paymentId).orElseThrow(PaymentNotFoundException::new);
         payment.reject(staff, why, book.now());
+        book.count(payment);
         Money amount = payment.amount();
         UUID hold = ledger.systemAccount(SystemAccount.HOLD, amount.currency());
         UUID wallet = Objects.requireNonNull(payment.fromWalletId(), "a held payment has a source wallet");

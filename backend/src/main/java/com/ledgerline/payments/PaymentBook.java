@@ -3,6 +3,7 @@ package com.ledgerline.payments;
 import com.ledgerline.ledger.IdempotencyKeyReusedException;
 import com.ledgerline.ledger.Ledger;
 import com.ledgerline.ledger.StatementLine;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
@@ -26,9 +27,16 @@ class PaymentBook {
     private final Ledger ledger;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final MeterRegistry metrics;
 
-    PaymentBook(PaymentRepository payments, Ledger ledger, ApplicationEventPublisher events, Clock clock) {
+    PaymentBook(
+            PaymentRepository payments,
+            Ledger ledger,
+            ApplicationEventPublisher events,
+            Clock clock,
+            MeterRegistry metrics) {
         this.payments = payments;
+        this.metrics = metrics;
         this.ledger = ledger;
         this.events = events;
         this.clock = clock;
@@ -60,7 +68,15 @@ class PaymentBook {
     }
 
     Payment save(Payment payment) {
-        return payments.save(payment);
+        Payment saved = payments.save(payment);
+        count(saved);
+        return saved;
+    }
+
+    /** Counts payments by kind and status (Prometheus: {@code ledgerline_payments_total}). */
+    void count(Payment payment) {
+        metrics.counter("ledgerline.payments", "kind", payment.kind().name(), "status", payment.status().name())
+                .increment();
     }
 
     void publish(Object event) {

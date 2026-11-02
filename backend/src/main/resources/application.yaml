@@ -30,6 +30,9 @@ spring:
     redis:
       host: localhost
       port: 6379
+  session:
+    redis:
+      namespace: "ledgerline:session"
   cache:
     type: redis
     redis:
@@ -53,6 +56,9 @@ spring:
 
 server:
   port: 8080
+  # The app runs behind nginx (and an ingress in Kubernetes): trust their X-Forwarded-* headers so
+  # it knows a request came in over HTTPS.
+  forward-headers-strategy: native
   servlet:
     session:
       timeout: 30m
@@ -61,14 +67,33 @@ server:
         same-site: lax
 
 management:
+  # Actuator on its own port: metrics and health stay inside the cluster, never behind the public
+  # ingress, which only routes /api to port 8080.
+  server:
+    port: 8081
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:
         enabled: true
+  metrics:
+    tags:
+      application: ledgerline
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  # Metrics are scraped by Prometheus; traces go out over OTLP only where an endpoint is set
+  # (MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT in Compose and Kubernetes).
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 ledgerline:
   fx:

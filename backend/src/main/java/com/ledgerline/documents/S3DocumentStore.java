@@ -8,6 +8,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.exception.SdkException;
@@ -21,8 +23,9 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 /**
- * {@link DocumentStore} on the S3 API. Path-style addressing ({@code host/bucket/key}) is what
- * MinIO expects; it also works with Amazon S3.
+ * {@link DocumentStore} on the S3 API: MinIO locally and in the demo cluster, Amazon S3 in
+ * production. MinIO is addressed path-style ({@code host/bucket/key}); Amazon S3, with no endpoint
+ * set, the default virtual-hosted style.
  */
 @Service
 class S3DocumentStore implements DocumentStore {
@@ -36,14 +39,26 @@ class S3DocumentStore implements DocumentStore {
         S3ClientBuilder builder = S3Client.builder()
                 .httpClientBuilder(UrlConnectionHttpClient.builder())
                 .region(Region.of(properties.region()))
-                .forcePathStyle(true)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(properties.accessKey(), properties.secretKey())));
+                .forcePathStyle(!properties.endpoint().isBlank())
+                .credentialsProvider(credentials(properties));
         if (!properties.endpoint().isBlank()) {
             builder.endpointOverride(URI.create(properties.endpoint()));
         }
         this.s3 = builder.build();
         this.bucket = properties.bucket();
+    }
+
+    /**
+     * The configured keys, or, when none are set, the AWS default chain: environment variables, or
+     * the role of the pod (EKS Pod Identity) or machine the app runs on. Production on AWS needs no
+     * keys at all.
+     */
+    private static AwsCredentialsProvider credentials(DocumentStorageProperties properties) {
+        if (properties.accessKey().isBlank()) {
+            return DefaultCredentialsProvider.builder().build();
+        }
+        return StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(properties.accessKey(), properties.secretKey()));
     }
 
     /** Creates the bucket on first start, so a fresh environment needs no manual setup. */

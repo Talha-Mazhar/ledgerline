@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,10 +48,12 @@ class JdbcLedger implements Ledger {
 
     private final JdbcClient jdbc;
     private final Clock clock;
+    private final MeterRegistry metrics;
 
-    JdbcLedger(JdbcClient jdbc, Clock clock) {
+    JdbcLedger(JdbcClient jdbc, Clock clock, MeterRegistry metrics) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     @Override
@@ -110,9 +114,25 @@ class JdbcLedger implements Ledger {
         return balances;
     }
 
+    /** Times every post (Prometheus: {@code ledgerline_ledger_posts_seconds}), by entry kind and outcome. */
     @Override
     @Transactional
     public PostedEntry post(JournalEntry entry) {
+        Timer.Sample sample = Timer.start(metrics);
+        String outcome = "error";
+        try {
+            PostedEntry posted = record(entry);
+            outcome = posted.replayed() ? "replayed" : "posted";
+            return posted;
+        } catch (InsufficientFundsException refused) {
+            outcome = "insufficient-funds";
+            throw refused;
+        } finally {
+            sample.stop(metrics.timer("ledgerline.ledger.posts", "kind", entry.kind().name(), "outcome", outcome));
+        }
+    }
+
+    private PostedEntry record(JournalEntry entry) {
         UUID entryId = UUID.randomUUID();
         OffsetDateTime postedAt = now();
 

@@ -58,7 +58,8 @@ class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-in", "/api/v1/auth/sign-up")
                         .permitAll()
-                        .requestMatchers("/actuator/health/**", "/actuator/info")
+                        // Actuator listens on its own port (8081), which is never exposed publicly.
+                        .requestMatchers("/actuator/**")
                         .permitAll()
                         .requestMatchers("/api/v1/back-office/**")
                         .hasAnyRole(Role.SUPPORT.name(), Role.ADMIN.name())

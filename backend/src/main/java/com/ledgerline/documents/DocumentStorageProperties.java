@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param endpoint the S3 endpoint; MinIO's URL locally, empty for Amazon S3
  * @param region the S3 region (MinIO accepts any)
  * @param bucket the bucket documents go into; created at start-up if missing
- * @param accessKey the access key id
+ * @param accessKey the access key id; empty to use the AWS default credentials (e.g. the pod's role)
  * @param secretKey the secret access key
  */
 @ConfigurationProperties("ledgerline.documents")
