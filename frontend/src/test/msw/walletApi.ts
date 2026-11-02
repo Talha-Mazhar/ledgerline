@@ -237,7 +237,12 @@ export const walletHandlers = [
     }
     const line = move(wallet, -cents, 'TRANSFER_OUT', `Sent to ${recipient.displayName}`);
     return HttpResponse.json<Transfer>(
-      { activity: line, recipient: { email: recipient.email, displayName: recipient.displayName } },
+      {
+        activity: line,
+        recipient: { email: recipient.email, displayName: recipient.displayName },
+        paymentId: nextId(),
+        status: 'COMPLETED',
+      },
       { status: 201 },
     );
   }),

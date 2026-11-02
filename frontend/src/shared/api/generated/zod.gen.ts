@@ -40,7 +40,9 @@ export const zAmountRequest = z.object({
 });
 
 /**
- * What moved the money, from this wallet's point of view.
+ * What moved the money, from this wallet's point of view. HELD is money set aside while a
+ * payment waits for approval; RELEASED is held money returned after a rejection.
+ *
  */
 export const zActivityKind = z.enum([
     'DEPOSIT',
@@ -48,7 +50,11 @@ export const zActivityKind = z.enum([
     'EXCHANGE_OUT',
     'EXCHANGE_IN',
     'TRANSFER_OUT',
-    'TRANSFER_IN'
+    'TRANSFER_IN',
+    'HELD',
+    'RELEASED',
+    'REFUND_OUT',
+    'REFUND_IN'
 ]);
 
 /**
@@ -154,9 +160,151 @@ export const zRecipient = z.object({
     displayName: z.string()
 });
 
+export const zPaymentKind = z.enum([
+    'DEPOSIT',
+    'WITHDRAWAL',
+    'TRANSFER',
+    'EXCHANGE',
+    'REFUND'
+]);
+
+/**
+ * COMPLETED: the money moved. HELD: waiting for a first staff approval.
+ * AWAITING_SECOND_APPROVAL: one approval given; a second, different person must approve.
+ * REJECTED: not approved, money returned. REFUNDED: reversed by staff.
+ *
+ */
+export const zPaymentStatus = z.enum([
+    'COMPLETED',
+    'HELD',
+    'AWAITING_SECOND_APPROVAL',
+    'REJECTED',
+    'REFUNDED'
+]);
+
 export const zTransfer = z.object({
     activity: zActivityItem,
-    recipient: zRecipient
+    recipient: zRecipient,
+    paymentId: z.uuid(),
+    status: zPaymentStatus
+});
+
+export const zPayment = z.object({
+    id: z.uuid(),
+    kind: zPaymentKind,
+    status: zPaymentStatus,
+    direction: z.enum(['IN', 'OUT']),
+    description: z.string(),
+    amount: zMoney,
+    holdReason: z.string().nullish(),
+    rejectionReason: z.string().nullish(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime()
+});
+
+export const zPaymentList = z.object({
+    items: z.array(zPayment)
+});
+
+export const zParty = z.object({
+    id: z.uuid(),
+    email: z.string(),
+    displayName: z.string()
+});
+
+export const zStaffPayment = z.object({
+    id: z.uuid(),
+    kind: zPaymentKind,
+    status: zPaymentStatus,
+    amount: zMoney,
+    customer: zParty,
+    counterparty: zParty.nullish(),
+    holdReason: z.string().nullish(),
+    firstApprover: z.string().nullish(),
+    secondApprover: z.string().nullish(),
+    rejectionReason: z.string().nullish(),
+    refundable: z.boolean(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime()
+});
+
+export const zStaffPaymentList = z.object({
+    items: z.array(zStaffPayment)
+});
+
+export const zRejectRequest = z.object({
+    reason: z.string()
+});
+
+export const zNotification = z.object({
+    id: z.uuid(),
+    kind: z.string(),
+    title: z.string(),
+    body: z.string(),
+    link: z.string().nullish(),
+    createdAt: z.iso.datetime(),
+    read: z.boolean()
+});
+
+export const zNotificationList = z.object({
+    unread: z.int(),
+    items: z.array(zNotification)
+});
+
+export const zVerificationStatus = z.enum([
+    'NOT_STARTED',
+    'PENDING_REVIEW',
+    'VERIFIED',
+    'REJECTED'
+]);
+
+/**
+ * BASIC until the identity is verified, then VERIFIED, with higher limits.
+ */
+export const zTier = z.enum(['BASIC', 'VERIFIED']);
+
+export const zVerification = z.object({
+    status: zVerificationStatus,
+    tier: zTier,
+    documentName: z.string().nullish(),
+    submittedAt: z.iso.datetime().nullish(),
+    reviewedAt: z.iso.datetime().nullish(),
+    rejectionReason: z.string().nullish()
+});
+
+export const zLimits = z.object({
+    tier: zTier,
+    singlePayment: z.string(),
+    daily: z.string(),
+    currency: z.enum(['EUR'])
+});
+
+export const zReviewItem = z.object({
+    userId: z.uuid(),
+    email: z.string(),
+    displayName: z.string(),
+    status: zVerificationStatus,
+    documentName: z.string(),
+    contentType: z.string(),
+    submittedAt: z.iso.datetime()
+});
+
+export const zReviewQueue = z.object({
+    items: z.array(zReviewItem)
+});
+
+export const zAuditEntry = z.object({
+    id: z.uuid(),
+    actor: z.string().nullish(),
+    action: z.string(),
+    targetType: z.string(),
+    targetId: z.uuid(),
+    details: z.string(),
+    occurredAt: z.iso.datetime()
+});
+
+export const zAuditList = z.object({
+    items: z.array(zAuditEntry)
 });
 
 /**
@@ -340,3 +488,135 @@ export const zChangeUserRolePath = z.object({
  * The user with the new role.
  */
 export const zChangeUserRoleResponse = zStaffUser;
+
+export const zListPaymentsQuery = z.object({
+    limit: z.int().gte(1).lte(100).optional().default(50)
+});
+
+/**
+ * Payments the customer made, and transfers they received.
+ */
+export const zListPaymentsResponse = zPaymentList;
+
+export const zListNotificationsQuery = z.object({
+    limit: z.int().gte(1).lte(100).optional().default(20)
+});
+
+/**
+ * Newest first.
+ */
+export const zListNotificationsResponse = zNotificationList;
+
+export const zMarkNotificationReadPath = z.object({
+    notificationId: z.uuid()
+});
+
+/**
+ * Marked as read.
+ */
+export const zMarkNotificationReadResponse = z.void();
+
+/**
+ * All marked as read.
+ */
+export const zMarkAllNotificationsReadResponse = z.void();
+
+/**
+ * The verification, or NOT_STARTED.
+ */
+export const zGetVerificationResponse = zVerification;
+
+export const zSubmitVerificationBody = z.object({
+    document: z.string()
+});
+
+/**
+ * Received; waiting for review.
+ */
+export const zSubmitVerificationResponse = zVerification;
+
+/**
+ * The limits for the customer's tier, in euros.
+ */
+export const zGetLimitsResponse = zLimits;
+
+export const zListStaffPaymentsQuery = z.object({
+    status: z.array(zPaymentStatus).optional()
+});
+
+/**
+ * Up to 100 payments.
+ */
+export const zListStaffPaymentsResponse = zStaffPaymentList;
+
+export const zApprovePaymentPath = z.object({
+    paymentId: z.uuid()
+});
+
+/**
+ * The payment after the approval.
+ */
+export const zApprovePaymentResponse = zStaffPayment;
+
+export const zRejectPaymentBody = zRejectRequest;
+
+export const zRejectPaymentPath = z.object({
+    paymentId: z.uuid()
+});
+
+/**
+ * The rejected payment.
+ */
+export const zRejectPaymentResponse = zStaffPayment;
+
+export const zRefundPaymentPath = z.object({
+    paymentId: z.uuid()
+});
+
+/**
+ * The original payment, now REFUNDED.
+ */
+export const zRefundPaymentResponse = zStaffPayment;
+
+/**
+ * The review queue.
+ */
+export const zListVerificationsToReviewResponse = zReviewQueue;
+
+export const zGetVerificationDocumentPath = z.object({
+    userId: z.uuid()
+});
+
+/**
+ * The file, as uploaded.
+ */
+export const zGetVerificationDocumentResponse = z.string();
+
+export const zApproveVerificationPath = z.object({
+    userId: z.uuid()
+});
+
+/**
+ * The verification, now VERIFIED.
+ */
+export const zApproveVerificationResponse = zVerification;
+
+export const zRejectVerificationBody = zRejectRequest;
+
+export const zRejectVerificationPath = z.object({
+    userId: z.uuid()
+});
+
+/**
+ * The verification, now REJECTED.
+ */
+export const zRejectVerificationResponse = zVerification;
+
+export const zListAuditEntriesQuery = z.object({
+    limit: z.int().gte(1).lte(500).optional().default(100)
+});
+
+/**
+ * Newest first.
+ */
+export const zListAuditEntriesResponse = zAuditList;

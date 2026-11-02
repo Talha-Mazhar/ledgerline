@@ -43,9 +43,11 @@ export type AmountRequest = {
 };
 
 /**
- * What moved the money, from this wallet's point of view.
+ * What moved the money, from this wallet's point of view. HELD is money set aside while a
+ * payment waits for approval; RELEASED is held money returned after a rejection.
+ *
  */
-export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL' | 'EXCHANGE_OUT' | 'EXCHANGE_IN' | 'TRANSFER_OUT' | 'TRANSFER_IN';
+export type ActivityKind = 'DEPOSIT' | 'WITHDRAWAL' | 'EXCHANGE_OUT' | 'EXCHANGE_IN' | 'TRANSFER_OUT' | 'TRANSFER_IN' | 'HELD' | 'RELEASED' | 'REFUND_OUT' | 'REFUND_IN';
 
 /**
  * One line of a wallet's ledger.
@@ -167,6 +169,146 @@ export type Recipient = {
 export type Transfer = {
     activity: ActivityItem;
     recipient: Recipient;
+    paymentId: string;
+    status: PaymentStatus;
+};
+
+export type PaymentKind = 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER' | 'EXCHANGE' | 'REFUND';
+
+/**
+ * COMPLETED: the money moved. HELD: waiting for a first staff approval.
+ * AWAITING_SECOND_APPROVAL: one approval given; a second, different person must approve.
+ * REJECTED: not approved, money returned. REFUNDED: reversed by staff.
+ *
+ */
+export type PaymentStatus = 'COMPLETED' | 'HELD' | 'AWAITING_SECOND_APPROVAL' | 'REJECTED' | 'REFUNDED';
+
+export type Payment = {
+    id: string;
+    kind: PaymentKind;
+    status: PaymentStatus;
+    direction: 'IN' | 'OUT';
+    description: string;
+    amount: Money;
+    holdReason?: string | null;
+    rejectionReason?: string | null;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type PaymentList = {
+    items: Array<Payment>;
+};
+
+export type Party = {
+    id: string;
+    email: string;
+    displayName: string;
+};
+
+export type StaffPayment = {
+    id: string;
+    kind: PaymentKind;
+    status: PaymentStatus;
+    amount: Money;
+    customer: Party;
+    counterparty?: Party | null;
+    holdReason?: string | null;
+    firstApprover?: string | null;
+    secondApprover?: string | null;
+    rejectionReason?: string | null;
+    refundable: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type StaffPaymentList = {
+    items: Array<StaffPayment>;
+};
+
+export type RejectRequest = {
+    /**
+     * Shown to the customer. Up to 500 characters.
+     */
+    reason: string;
+};
+
+export type Notification = {
+    id: string;
+    kind: string;
+    title: string;
+    body: string;
+    /**
+     * The page of the app the notification is about, e.g. /payments.
+     */
+    link?: string | null;
+    createdAt: string;
+    read: boolean;
+};
+
+export type NotificationList = {
+    unread: number;
+    items: Array<Notification>;
+};
+
+export type VerificationStatus = 'NOT_STARTED' | 'PENDING_REVIEW' | 'VERIFIED' | 'REJECTED';
+
+/**
+ * BASIC until the identity is verified, then VERIFIED, with higher limits.
+ */
+export type Tier = 'BASIC' | 'VERIFIED';
+
+export type Verification = {
+    status: VerificationStatus;
+    tier: Tier;
+    documentName?: string | null;
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+};
+
+export type Limits = {
+    tier: Tier;
+    /**
+     * The most one payment may be without approval, in euros.
+     */
+    singlePayment: string;
+    /**
+     * The most all payments of the last 24 hours may add up to without approval.
+     */
+    daily: string;
+    currency: 'EUR';
+};
+
+export type ReviewItem = {
+    userId: string;
+    email: string;
+    displayName: string;
+    status: VerificationStatus;
+    documentName: string;
+    contentType: string;
+    submittedAt: string;
+};
+
+export type ReviewQueue = {
+    items: Array<ReviewItem>;
+};
+
+export type AuditEntry = {
+    id: string;
+    /**
+     * The staff member's name; empty for actions the system took.
+     */
+    actor?: string | null;
+    action: string;
+    targetType: string;
+    targetId: string;
+    details: string;
+    occurredAt: string;
+};
+
+export type AuditList = {
+    items: Array<AuditEntry>;
 };
 
 /**
@@ -816,3 +958,557 @@ export type ChangeUserRoleResponses = {
 };
 
 export type ChangeUserRoleResponse = ChangeUserRoleResponses[keyof ChangeUserRoleResponses];
+
+export type ListPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * How many lines to return, newest first.
+         */
+        limit?: number;
+    };
+    url: '/payments';
+};
+
+export type ListPaymentsErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type ListPaymentsError = ListPaymentsErrors[keyof ListPaymentsErrors];
+
+export type ListPaymentsResponses = {
+    /**
+     * Payments the customer made, and transfers they received.
+     */
+    200: PaymentList;
+};
+
+export type ListPaymentsResponse = ListPaymentsResponses[keyof ListPaymentsResponses];
+
+export type ListNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/notifications';
+};
+
+export type ListNotificationsErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type ListNotificationsError = ListNotificationsErrors[keyof ListNotificationsErrors];
+
+export type ListNotificationsResponses = {
+    /**
+     * Newest first.
+     */
+    200: NotificationList;
+};
+
+export type ListNotificationsResponse = ListNotificationsResponses[keyof ListNotificationsResponses];
+
+export type MarkNotificationReadData = {
+    body?: never;
+    path: {
+        notificationId: string;
+    };
+    query?: never;
+    url: '/notifications/{notificationId}/read';
+};
+
+export type MarkNotificationReadErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type MarkNotificationReadError = MarkNotificationReadErrors[keyof MarkNotificationReadErrors];
+
+export type MarkNotificationReadResponses = {
+    /**
+     * Marked as read.
+     */
+    204: void;
+};
+
+export type MarkNotificationReadResponse = MarkNotificationReadResponses[keyof MarkNotificationReadResponses];
+
+export type MarkAllNotificationsReadData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/notifications/read-all';
+};
+
+export type MarkAllNotificationsReadErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type MarkAllNotificationsReadError = MarkAllNotificationsReadErrors[keyof MarkAllNotificationsReadErrors];
+
+export type MarkAllNotificationsReadResponses = {
+    /**
+     * All marked as read.
+     */
+    204: void;
+};
+
+export type MarkAllNotificationsReadResponse = MarkAllNotificationsReadResponses[keyof MarkAllNotificationsReadResponses];
+
+export type GetVerificationData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/verification';
+};
+
+export type GetVerificationErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type GetVerificationError = GetVerificationErrors[keyof GetVerificationErrors];
+
+export type GetVerificationResponses = {
+    /**
+     * The verification, or NOT_STARTED.
+     */
+    200: Verification;
+};
+
+export type GetVerificationResponse = GetVerificationResponses[keyof GetVerificationResponses];
+
+export type SubmitVerificationData = {
+    body: {
+        document: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/verification';
+};
+
+export type SubmitVerificationErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type SubmitVerificationError = SubmitVerificationErrors[keyof SubmitVerificationErrors];
+
+export type SubmitVerificationResponses = {
+    /**
+     * Received; waiting for review.
+     */
+    202: Verification;
+};
+
+export type SubmitVerificationResponse = SubmitVerificationResponses[keyof SubmitVerificationResponses];
+
+export type GetLimitsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/limits';
+};
+
+export type GetLimitsErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+};
+
+export type GetLimitsError = GetLimitsErrors[keyof GetLimitsErrors];
+
+export type GetLimitsResponses = {
+    /**
+     * The limits for the customer's tier, in euros.
+     */
+    200: Limits;
+};
+
+export type GetLimitsResponse = GetLimitsResponses[keyof GetLimitsResponses];
+
+export type ListStaffPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Without it, the payments waiting for approval, oldest first.
+         */
+        status?: Array<PaymentStatus>;
+    };
+    url: '/back-office/payments';
+};
+
+export type ListStaffPaymentsErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type ListStaffPaymentsError = ListStaffPaymentsErrors[keyof ListStaffPaymentsErrors];
+
+export type ListStaffPaymentsResponses = {
+    /**
+     * Up to 100 payments.
+     */
+    200: StaffPaymentList;
+};
+
+export type ListStaffPaymentsResponse = ListStaffPaymentsResponses[keyof ListStaffPaymentsResponses];
+
+export type ApprovePaymentData = {
+    body?: never;
+    path: {
+        paymentId: string;
+    };
+    query?: never;
+    url: '/back-office/payments/{paymentId}/approve';
+};
+
+export type ApprovePaymentErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * There is no payment with this id.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type ApprovePaymentError = ApprovePaymentErrors[keyof ApprovePaymentErrors];
+
+export type ApprovePaymentResponses = {
+    /**
+     * The payment after the approval.
+     */
+    200: StaffPayment;
+};
+
+export type ApprovePaymentResponse = ApprovePaymentResponses[keyof ApprovePaymentResponses];
+
+export type RejectPaymentData = {
+    body: RejectRequest;
+    path: {
+        paymentId: string;
+    };
+    query?: never;
+    url: '/back-office/payments/{paymentId}/reject';
+};
+
+export type RejectPaymentErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * There is no payment with this id.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type RejectPaymentError = RejectPaymentErrors[keyof RejectPaymentErrors];
+
+export type RejectPaymentResponses = {
+    /**
+     * The rejected payment.
+     */
+    200: StaffPayment;
+};
+
+export type RejectPaymentResponse = RejectPaymentResponses[keyof RejectPaymentResponses];
+
+export type RefundPaymentData = {
+    body?: never;
+    path: {
+        paymentId: string;
+    };
+    query?: never;
+    url: '/back-office/payments/{paymentId}/refund';
+};
+
+export type RefundPaymentErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * There is no payment with this id.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type RefundPaymentError = RefundPaymentErrors[keyof RefundPaymentErrors];
+
+export type RefundPaymentResponses = {
+    /**
+     * The original payment, now REFUNDED.
+     */
+    200: StaffPayment;
+};
+
+export type RefundPaymentResponse = RefundPaymentResponses[keyof RefundPaymentResponses];
+
+export type ListVerificationsToReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/back-office/verifications';
+};
+
+export type ListVerificationsToReviewErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type ListVerificationsToReviewError = ListVerificationsToReviewErrors[keyof ListVerificationsToReviewErrors];
+
+export type ListVerificationsToReviewResponses = {
+    /**
+     * The review queue.
+     */
+    200: ReviewQueue;
+};
+
+export type ListVerificationsToReviewResponse = ListVerificationsToReviewResponses[keyof ListVerificationsToReviewResponses];
+
+export type GetVerificationDocumentData = {
+    body?: never;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/back-office/verifications/{userId}/document';
+};
+
+export type GetVerificationDocumentErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * This user has not submitted a document.
+     */
+    404: Problem;
+};
+
+export type GetVerificationDocumentError = GetVerificationDocumentErrors[keyof GetVerificationDocumentErrors];
+
+export type GetVerificationDocumentResponses = {
+    /**
+     * The file, as uploaded.
+     */
+    200: Blob | File;
+};
+
+export type GetVerificationDocumentResponse = GetVerificationDocumentResponses[keyof GetVerificationDocumentResponses];
+
+export type ApproveVerificationData = {
+    body?: never;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/back-office/verifications/{userId}/approve';
+};
+
+export type ApproveVerificationErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * This user has not submitted a document.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type ApproveVerificationError = ApproveVerificationErrors[keyof ApproveVerificationErrors];
+
+export type ApproveVerificationResponses = {
+    /**
+     * The verification, now VERIFIED.
+     */
+    200: Verification;
+};
+
+export type ApproveVerificationResponse = ApproveVerificationResponses[keyof ApproveVerificationResponses];
+
+export type RejectVerificationData = {
+    body: RejectRequest;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/back-office/verifications/{userId}/reject';
+};
+
+export type RejectVerificationErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * This user has not submitted a document.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type RejectVerificationError = RejectVerificationErrors[keyof RejectVerificationErrors];
+
+export type RejectVerificationResponses = {
+    /**
+     * The verification, now REJECTED.
+     */
+    200: Verification;
+};
+
+export type RejectVerificationResponse = RejectVerificationResponses[keyof RejectVerificationResponses];
+
+export type ListAuditEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/back-office/audit';
+};
+
+export type ListAuditEntriesErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type ListAuditEntriesError = ListAuditEntriesErrors[keyof ListAuditEntriesErrors];
+
+export type ListAuditEntriesResponses = {
+    /**
+     * Newest first.
+     */
+    200: AuditList;
+};
+
+export type ListAuditEntriesResponse = ListAuditEntriesResponses[keyof ListAuditEntriesResponses];
