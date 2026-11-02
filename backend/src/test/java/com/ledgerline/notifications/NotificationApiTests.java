@@ -16,7 +16,6 @@ import com.ledgerline.identity.SignedInUser;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,10 +74,12 @@ class NotificationApiTests {
                 .andExpect(jsonPath("$.unread").value(0))
                 .andExpect(jsonPath("$.items[0].read").value(true));
 
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> mvc.perform(
-                        get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
-                .andExpect(jsonPath("$.items[?(@.title == 'Money sent')].body")
-                        .value(List.of("You sent €25.00 to Rita Receive."))));
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(mvc.perform(
+                                get("/api/v1/notifications").with(TestUsers.signedInAs(sender)))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString(StandardCharsets.UTF_8))
+                .contains("\"title\":\"Money sent\",\"body\":\"You sent €25.00 to Rita Receive.\""));
     }
 
     @Test

@@ -145,7 +145,9 @@ class AuthApiTests {
 
     /** The session cookie a browser would keep. Sessions live in Redis, found by this cookie. */
     private static Cookie sessionCookie(MvcResult result) {
-        return Objects.requireNonNull(result.getResponse().getCookie("LEDGERLINE_SESSION"), "no session cookie");
+        return Objects.requireNonNull(
+                result.getResponse().getCookie("LEDGERLINE_SESSION"),
+                () -> "no LEDGERLINE_SESSION cookie; Set-Cookie: " + result.getResponse().getHeaders("Set-Cookie"));
     }
 
     private static RequestBuilder signInRequest(String email, String password) {
