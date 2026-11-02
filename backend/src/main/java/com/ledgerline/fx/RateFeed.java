@@ -12,7 +12,7 @@ interface RateFeed {
     Rates latest();
 
     record Rates(Map<CurrencyCode, BigDecimal> unitsPerEur, Instant asOf) {
-        Rates {
+        public Rates {
             unitsPerEur = Map.copyOf(unitsPerEur);
         }
     }
