@@ -131,7 +131,7 @@ infrastructure:
     image: postgres:18-alpine
     storage: 5Gi
   kafka:
-    image: apache/kafka:4.1.0
+    image: apache/kafka:4.3.1
     storage: 5Gi
   redis:
     image: redis:8-alpine
