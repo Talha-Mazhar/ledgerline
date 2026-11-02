@@ -11,7 +11,7 @@ function givenHeldTransfer() {
     counterparty: JANA,
     kind: 'TRANSFER',
     amount: { amount: '1500.00', currency: 'EUR' },
-    description: 'To Jana Nováková',
+    description: 'Sent to Jana Nováková',
     status: 'HELD',
     holdReason: 'Above the single-payment limit of €1,000.00',
   });

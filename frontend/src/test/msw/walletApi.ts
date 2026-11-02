@@ -243,7 +243,7 @@ export const walletHandlers = [
     }
     const held = cents > HOLD_ABOVE_CENTS;
     const line = held
-      ? move(wallet, -cents, 'HELD', `Set aside: transfer to ${recipient.displayName}`)
+      ? move(wallet, -cents, 'HELD', `Sent to ${recipient.displayName}, awaiting approval`)
       : move(wallet, -cents, 'TRANSFER_OUT', `Sent to ${recipient.displayName}`);
     const sender = currentUser();
     const payment =
@@ -254,7 +254,7 @@ export const walletHandlers = [
             counterparty: recipient,
             kind: 'TRANSFER',
             amount: { amount: fromCents(cents), currency: wallet.currency },
-            description: `To ${recipient.displayName}`,
+            description: `Sent to ${recipient.displayName}`,
             status: held ? 'HELD' : 'COMPLETED',
             holdReason: held ? 'Above the single-payment limit of €1,000.00' : undefined,
           });

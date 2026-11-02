@@ -25,7 +25,7 @@ describe('Payments', () => {
     await user.click(first(screen.getAllByRole('link', { name: 'Payments' })));
 
     const table = await screen.findByRole('table', { name: 'Payments' });
-    expect(await within(table).findByText('To Jana Nováková')).toBeInTheDocument();
+    expect(await within(table).findByText('Sent to Jana Nováková')).toBeInTheDocument();
     expect(within(table).getByText('Completed')).toBeInTheDocument();
     expect(within(table).getByText('-€30.00')).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('Payments', () => {
     ).toBeInTheDocument();
     const ledger = screen.getByRole('table', { name: 'Activity' });
     expect(
-      await within(ledger).findByText('Set aside: transfer to Jana Nováková'),
+      await within(ledger).findByText('Sent to Jana Nováková, awaiting approval'),
     ).toBeInTheDocument();
 
     await user.click(first(screen.getAllByRole('link', { name: 'Payments' })));
