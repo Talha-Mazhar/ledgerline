@@ -12,7 +12,13 @@ public enum ActivityKind {
     EXCHANGE_OUT,
     EXCHANGE_IN,
     TRANSFER_OUT,
-    TRANSFER_IN;
+    TRANSFER_IN,
+    /** Money set aside while the payment waits for approval. */
+    HELD,
+    /** Held money returned because the payment was not approved. */
+    RELEASED,
+    REFUND_OUT,
+    REFUND_IN;
 
     static ActivityKind of(StatementLine line) {
         boolean in = line.amount().isPositive();
@@ -21,6 +27,9 @@ public enum ActivityKind {
             case WITHDRAWAL -> WITHDRAWAL;
             case EXCHANGE -> in ? EXCHANGE_IN : EXCHANGE_OUT;
             case TRANSFER -> in ? TRANSFER_IN : TRANSFER_OUT;
+            case HOLD -> HELD;
+            case RELEASE -> RELEASED;
+            case REFUND -> in ? REFUND_IN : REFUND_OUT;
         };
     }
 }

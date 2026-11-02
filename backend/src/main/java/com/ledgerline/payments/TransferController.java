@@ -27,7 +27,11 @@ class TransferController {
 
     record RecipientResponse(String email, String displayName) {}
 
-    record TransferResponse(ActivityItemResponse activity, RecipientResponse recipient) {}
+    /**
+     * @param status COMPLETED when the money arrived, HELD when it waits for staff approval
+     */
+    record TransferResponse(
+            ActivityItemResponse activity, RecipientResponse recipient, UUID paymentId, PaymentStatus status) {}
 
     private final Transfers transfers;
     private final CurrentUser currentUser;
@@ -46,6 +50,8 @@ class TransferController {
                 .body(new TransferResponse(
                         ActivityItemResponse.from(sent.line()),
                         new RecipientResponse(
-                                sent.recipient().email(), sent.recipient().displayName())));
+                                sent.recipient().email(), sent.recipient().displayName()),
+                        sent.payment().id(),
+                        sent.payment().status()));
     }
 }
