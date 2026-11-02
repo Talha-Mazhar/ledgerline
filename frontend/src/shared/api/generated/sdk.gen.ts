@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetCurrentUserData, GetCurrentUserErrors, GetCurrentUserResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, SendMoneyData, SendMoneyErrors, SendMoneyResponses, SignInData, SignInErrors, SignInResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpData, SignUpErrors, SignUpResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
-import { zDepositMoneyResponse, zExchangeMoneyResponse, zGetCurrentUserResponse, zGetExchangeRateResponse, zGetWalletResponse, zListActivityResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zQuoteExchangeResponse, zSendMoneyResponse, zSignInResponse, zSignOutResponse, zSignUpResponse, zWithdrawMoneyResponse } from './zod.gen';
+import type { ChangeUserRoleData, ChangeUserRoleErrors, ChangeUserRoleResponses, DepositMoneyData, DepositMoneyErrors, DepositMoneyResponses, ExchangeMoneyData, ExchangeMoneyErrors, ExchangeMoneyResponses, GetCurrentUserData, GetCurrentUserErrors, GetCurrentUserResponses, GetExchangeRateData, GetExchangeRateErrors, GetExchangeRateResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListUsersData, ListUsersErrors, ListUsersResponses, ListWalletActivityData, ListWalletActivityErrors, ListWalletActivityResponses, ListWalletsData, ListWalletsErrors, ListWalletsResponses, OpenWalletData, OpenWalletErrors, OpenWalletResponses, QuoteExchangeData, QuoteExchangeErrors, QuoteExchangeResponses, SendMoneyData, SendMoneyErrors, SendMoneyResponses, SignInData, SignInErrors, SignInResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpData, SignUpErrors, SignUpResponses, WithdrawMoneyData, WithdrawMoneyErrors, WithdrawMoneyResponses } from './types.gen';
+import { zChangeUserRoleResponse, zDepositMoneyResponse, zExchangeMoneyResponse, zGetCurrentUserResponse, zGetExchangeRateResponse, zGetWalletResponse, zListActivityResponse, zListUsersResponse, zListWalletActivityResponse, zListWalletsResponse, zOpenWalletResponse, zQuoteExchangeResponse, zSendMoneyResponse, zSignInResponse, zSignOutResponse, zSignUpResponse, zWithdrawMoneyResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -194,6 +194,30 @@ export const exchangeMoney = <ThrowOnError extends boolean = false>(options: Opt
 export const sendMoney = <ThrowOnError extends boolean = false>(options: Options<SendMoneyData, ThrowOnError>): RequestResult<SendMoneyResponses, SendMoneyErrors, ThrowOnError> => (options.client ?? client).post<SendMoneyResponses, SendMoneyErrors, ThrowOnError>({
     responseValidator: async (data) => await zSendMoneyResponse.parseAsync(data),
     url: '/transfers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Find users by email or name
+ */
+export const listUsers = <ThrowOnError extends boolean = false>(options?: Options<ListUsersData, ThrowOnError>): RequestResult<ListUsersResponses, ListUsersErrors, ThrowOnError> => (options?.client ?? client).get<ListUsersResponses, ListUsersErrors, ThrowOnError>({
+    responseValidator: async (data) => await zListUsersResponse.parseAsync(data),
+    url: '/back-office/users',
+    ...options
+});
+
+/**
+ * Change a user's role (admins only)
+ *
+ * Takes effect the next time the user signs in.
+ */
+export const changeUserRole = <ThrowOnError extends boolean = false>(options: Options<ChangeUserRoleData, ThrowOnError>): RequestResult<ChangeUserRoleResponses, ChangeUserRoleErrors, ThrowOnError> => (options.client ?? client).put<ChangeUserRoleResponses, ChangeUserRoleErrors, ThrowOnError>({
+    responseValidator: async (data) => await zChangeUserRoleResponse.parseAsync(data),
+    url: '/back-office/users/{userId}/role',
     ...options,
     headers: {
         'Content-Type': 'application/json',

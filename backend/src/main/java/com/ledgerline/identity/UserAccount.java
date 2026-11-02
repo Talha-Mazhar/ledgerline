@@ -2,6 +2,8 @@ package com.ledgerline.identity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -31,6 +33,10 @@ class UserAccount {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private Role role;
+
     @Version
     private @Nullable Long version;
 
@@ -44,6 +50,7 @@ class UserAccount {
         this.displayName = displayName;
         this.passwordHash = passwordHash;
         this.createdAt = createdAt;
+        this.role = Role.CUSTOMER;
     }
 
     static UserAccount register(String email, String displayName, String passwordHash, Instant now) {
@@ -84,7 +91,16 @@ class UserAccount {
         return version;
     }
 
+    Role role() {
+        return role;
+    }
+
+    /** Changes the user's role; only admins may do this, which the caller checks. */
+    void changeRole(Role newRole) {
+        this.role = newRole;
+    }
+
     UserSummary summary() {
-        return new UserSummary(id, email, displayName);
+        return new UserSummary(id, email, displayName, role);
     }
 }

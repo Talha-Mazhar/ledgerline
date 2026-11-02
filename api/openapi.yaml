@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ledgerline API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     The contract between the Ledgerline backend and its clients. The frontend generates its types and
     client from this file, and the backend's tests check every response against it.
@@ -27,6 +27,8 @@ tags:
     description: Changing money between currencies at Ledgerline's rates.
   - name: Transfers
     description: Sending money to other Ledgerline users.
+  - name: Back office
+    description: Tools for support staff and admins. Customers get 403.
 
 paths:
   /auth/sign-up:
@@ -414,6 +416,70 @@ paths:
         '422':
           $ref: '#/components/responses/RuleViolation'
 
+  /back-office/users:
+    get:
+      tags: [Back office]
+      operationId: listUsers
+      summary: Find users by email or name
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Up to 50 matching users, by email.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffUserList'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /back-office/users/{userId}/role:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags: [Back office]
+      operationId: changeUserRole
+      summary: Change a user's role (admins only)
+      description: Takes effect the next time the user signs in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRoleRequest'
+      responses:
+        '200':
+          description: The user with the new role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: There is no user with this id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/RuleViolation'
+
 components:
   parameters:
     WalletId:
@@ -653,9 +719,14 @@ components:
         rate:
           $ref: '#/components/schemas/Rate'
 
+    Role:
+      type: string
+      description: CUSTOMER uses their own wallets; SUPPORT and ADMIN work the back office.
+      enum: [CUSTOMER, SUPPORT, ADMIN]
+
     User:
       type: object
-      required: [id, email, displayName]
+      required: [id, email, displayName, role]
       properties:
         id:
           type: string
@@ -664,6 +735,38 @@ components:
           type: string
         displayName:
           type: string
+        role:
+          $ref: '#/components/schemas/Role'
+
+    StaffUser:
+      type: object
+      required: [id, email, displayName, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+
+    StaffUserList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffUser'
+
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
 
     SignUpRequest:
       type: object

@@ -77,6 +77,7 @@ class AuthApiTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(TestUsers.DEMO.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Demo user"))
+                .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(openApi().isValid(CONTRACT));
     }
 

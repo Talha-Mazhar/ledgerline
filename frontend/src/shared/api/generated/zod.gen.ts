@@ -101,10 +101,35 @@ export const zExchange = z.object({
     rate: zRate
 });
 
+/**
+ * CUSTOMER uses their own wallets; SUPPORT and ADMIN work the back office.
+ */
+export const zRole = z.enum([
+    'CUSTOMER',
+    'SUPPORT',
+    'ADMIN'
+]);
+
 export const zUser = z.object({
     id: z.uuid(),
     email: z.string(),
-    displayName: z.string()
+    displayName: z.string(),
+    role: zRole
+});
+
+export const zStaffUser = z.object({
+    id: z.uuid(),
+    email: z.string(),
+    displayName: z.string(),
+    role: zRole
+});
+
+export const zStaffUserList = z.object({
+    items: z.array(zStaffUser)
+});
+
+export const zChangeRoleRequest = z.object({
+    role: zRole
 });
 
 export const zSignUpRequest = z.object({
@@ -295,3 +320,23 @@ export const zSendMoneyHeaders = z.object({
  * The money was sent.
  */
 export const zSendMoneyResponse = zTransfer;
+
+export const zListUsersQuery = z.object({
+    query: z.string().optional()
+});
+
+/**
+ * Up to 50 matching users, by email.
+ */
+export const zListUsersResponse = zStaffUserList;
+
+export const zChangeUserRoleBody = zChangeRoleRequest;
+
+export const zChangeUserRolePath = z.object({
+    userId: z.uuid()
+});
+
+/**
+ * The user with the new role.
+ */
+export const zChangeUserRoleResponse = zStaffUser;

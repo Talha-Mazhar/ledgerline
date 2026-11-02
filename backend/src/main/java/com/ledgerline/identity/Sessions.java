@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
@@ -44,7 +45,7 @@ class Sessions {
     }
 
     void start(SignedInUser user, HttpServletRequest request, HttpServletResponse response) {
-        Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(user, null, List.of());
+        Authentication authentication = authenticationFor(user);
         request.getSession(true);
         newSessionId.onAuthentication(authentication, request, response);
         newCsrfToken.onAuthentication(authentication, request, response);
@@ -53,5 +54,11 @@ class Sessions {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         contexts.saveContext(context, request, response);
+    }
+
+    /** The authentication a signed-in user carries: the user and the authority of their role. */
+    static Authentication authenticationFor(SignedInUser user) {
+        return UsernamePasswordAuthenticationToken.authenticated(
+                user, null, List.of(new SimpleGrantedAuthority(user.role().authority())));
     }
 }

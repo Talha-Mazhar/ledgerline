@@ -14,12 +14,14 @@ export const DEMO_USER: User = {
   id: '00000000-0000-4000-8000-000000000001',
   email: 'demo@ledgerline.dev',
   displayName: 'Demo user',
+  role: 'CUSTOMER',
 };
 
 export const JANA: User = {
   id: '00000000-0000-4000-8000-000000000002',
   email: 'jana@ledgerline.dev',
   displayName: 'Jana Nováková',
+  role: 'CUSTOMER',
 };
 
 let accounts: Account[] = [];
@@ -81,6 +83,7 @@ export const authHandlers = [
       id: crypto.randomUUID(),
       email: body.email.trim().toLowerCase(),
       displayName: body.displayName.trim(),
+      role: 'CUSTOMER',
     };
     accounts.push({ user, password: body.password });
     signedIn = user;

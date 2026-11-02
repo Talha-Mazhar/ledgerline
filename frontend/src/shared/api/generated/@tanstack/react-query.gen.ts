@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getWallet, listActivity, listWalletActivity, listWallets, openWallet, type Options, quoteExchange, sendMoney, signIn, signOut, signUp, withdrawMoney } from '../sdk.gen';
-import type { DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
+import { changeUserRole, depositMoney, exchangeMoney, getCurrentUser, getExchangeRate, getWallet, listActivity, listUsers, listWalletActivity, listWallets, openWallet, type Options, quoteExchange, sendMoney, signIn, signOut, signUp, withdrawMoney } from '../sdk.gen';
+import type { ChangeUserRoleData, ChangeUserRoleError, ChangeUserRoleResponse, DepositMoneyData, DepositMoneyError, DepositMoneyResponse, ExchangeMoneyData, ExchangeMoneyError, ExchangeMoneyResponse, GetCurrentUserData, GetCurrentUserError, GetCurrentUserResponse, GetExchangeRateData, GetExchangeRateError, GetExchangeRateResponse, GetWalletData, GetWalletError, GetWalletResponse, ListActivityData, ListActivityError, ListActivityResponse, ListUsersData, ListUsersError, ListUsersResponse, ListWalletActivityData, ListWalletActivityError, ListWalletActivityResponse, ListWalletsData, ListWalletsError, ListWalletsResponse, OpenWalletData, OpenWalletError, OpenWalletResponse, QuoteExchangeData, QuoteExchangeError, QuoteExchangeResponse, SendMoneyData, SendMoneyError, SendMoneyResponse, SignInData, SignInError, SignInResponse, SignOutData, SignOutError, SignOutResponse, SignUpData, SignUpError, SignUpResponse, WithdrawMoneyData, WithdrawMoneyError, WithdrawMoneyResponse } from '../types.gen';
 
 /**
  * Create an account and sign in
@@ -305,6 +305,43 @@ export const sendMoneyMutation = (options?: Partial<Options<SendMoneyData>>): Us
     const mutationOptions: UseMutationOptions<SendMoneyResponse, SendMoneyError, Options<SendMoneyData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await sendMoney({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listUsersQueryKey = (options?: Options<ListUsersData>) => createQueryKey('listUsers', options);
+
+/**
+ * Find users by email or name
+ */
+export const listUsersOptions = (options?: Options<ListUsersData>) => queryOptions<ListUsersResponse, ListUsersError, ListUsersResponse, ReturnType<typeof listUsersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listUsers({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listUsersQueryKey(options)
+});
+
+/**
+ * Change a user's role (admins only)
+ *
+ * Takes effect the next time the user signs in.
+ */
+export const changeUserRoleMutation = (options?: Partial<Options<ChangeUserRoleData>>): UseMutationOptions<ChangeUserRoleResponse, ChangeUserRoleError, Options<ChangeUserRoleData>> => {
+    const mutationOptions: UseMutationOptions<ChangeUserRoleResponse, ChangeUserRoleError, Options<ChangeUserRoleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await changeUserRole({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

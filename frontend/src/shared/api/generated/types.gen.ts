@@ -106,10 +106,31 @@ export type Exchange = {
     rate: Rate;
 };
 
+/**
+ * CUSTOMER uses their own wallets; SUPPORT and ADMIN work the back office.
+ */
+export type Role = 'CUSTOMER' | 'SUPPORT' | 'ADMIN';
+
 export type User = {
     id: string;
     email: string;
     displayName: string;
+    role: Role;
+};
+
+export type StaffUser = {
+    id: string;
+    email: string;
+    displayName: string;
+    role: Role;
+};
+
+export type StaffUserList = {
+    items: Array<StaffUser>;
+};
+
+export type ChangeRoleRequest = {
+    role: Role;
 };
 
 export type SignUpRequest = {
@@ -721,3 +742,77 @@ export type SendMoneyResponses = {
 };
 
 export type SendMoneyResponse = SendMoneyResponses[keyof SendMoneyResponses];
+
+export type ListUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        query?: string;
+    };
+    url: '/back-office/users';
+};
+
+export type ListUsersErrors = {
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+};
+
+export type ListUsersError = ListUsersErrors[keyof ListUsersErrors];
+
+export type ListUsersResponses = {
+    /**
+     * Up to 50 matching users, by email.
+     */
+    200: StaffUserList;
+};
+
+export type ListUsersResponse = ListUsersResponses[keyof ListUsersResponses];
+
+export type ChangeUserRoleData = {
+    body: ChangeRoleRequest;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/back-office/users/{userId}/role';
+};
+
+export type ChangeUserRoleErrors = {
+    /**
+     * The request is malformed, for example an unknown currency or an invalid id.
+     */
+    400: Problem;
+    /**
+     * No signed-in session.
+     */
+    401: Problem;
+    /**
+     * The request was refused, for example because the CSRF token is missing.
+     */
+    403: Problem;
+    /**
+     * There is no user with this id.
+     */
+    404: Problem;
+    /**
+     * The request is well-formed but breaks a business rule, e.g. not enough money.
+     */
+    422: Problem;
+};
+
+export type ChangeUserRoleError = ChangeUserRoleErrors[keyof ChangeUserRoleErrors];
+
+export type ChangeUserRoleResponses = {
+    /**
+     * The user with the new role.
+     */
+    200: StaffUser;
+};
+
+export type ChangeUserRoleResponse = ChangeUserRoleResponses[keyof ChangeUserRoleResponses];

@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderNotFoundException;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,13 +38,14 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
  * </ul>
  */
 @Configuration(proxyBeanMethods = false)
+@EnableMethodSecurity
 class SecurityConfiguration {
 
     private static final String UNAUTHORIZED = """
             {"type":"about:blank","title":"Sign-in required","status":401,"detail":"Sign in to continue."}""";
     private static final String FORBIDDEN = """
             {"type":"about:blank","title":"Request refused","status":403,\
-            "detail":"The request was refused. Reload the page and try again."}""";
+            "detail":"You can't do this. If you think you should be able to, reload the page and try again."}""";
 
     @Bean
     SecurityFilterChain api(
@@ -58,6 +60,8 @@ class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info")
                         .permitAll()
+                        .requestMatchers("/api/v1/back-office/**")
+                        .hasAnyRole(Role.SUPPORT.name(), Role.ADMIN.name())
                         .anyRequest()
                         .authenticated())
                 .securityContext(context -> context.securityContextRepository(contexts))

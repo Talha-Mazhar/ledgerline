@@ -2,11 +2,15 @@ package com.ledgerline.identity;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +36,17 @@ class UserAccounts implements UserDirectory {
     private final UserAccountRepository users;
     private final PasswordEncoder passwords;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
     /** Checked when nobody has the email, so a wrong email takes as long as a wrong password. */
     private final String unknownUserHash;
 
-    UserAccounts(UserAccountRepository users, PasswordEncoder passwords, Clock clock) {
+    UserAccounts(
+            UserAccountRepository users,
+            PasswordEncoder passwords,
+            Clock clock,
+            ApplicationEventPublisher events) {
         this.users = users;
+        this.events = events;
         this.passwords = passwords;
         this.clock = clock;
         this.unknownUserHash = passwords.encode("no-user-" + UUID.randomUUID());
@@ -62,6 +72,8 @@ class UserAccounts implements UserDirectory {
         try {
             UserAccount account = users.saveAndFlush(
                     UserAccount.register(normalised, name, passwords.encode(password), clock.instant()));
+            events.publishEvent(
+                    new UserRegistered(UUID.randomUUID(), account.id(), account.email(), account.displayName()));
             return signedIn(account);
         } catch (DataIntegrityViolationException raced) {
             // Two sign-ups with the same email at once: the unique constraint lets only one through.
@@ -90,6 +102,47 @@ class UserAccounts implements UserDirectory {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<UserSummary> find(UUID id) {
+        return users.findById(id).map(UserAccount::summary);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserSummary> withRoles(Collection<Role> roles) {
+        return users.findByRoleInOrderByEmail(roles).stream()
+                .map(UserAccount::summary)
+                .toList();
+    }
+
+    /** Users whose email or name contains the text; all users, alphabetically, for empty text. */
+    @Transactional(readOnly = true)
+    List<UserSummary> search(String text, int limit) {
+        return users.search(text.trim(), PageRequest.of(0, limit)).stream()
+                .map(UserAccount::summary)
+                .toList();
+    }
+
+    /**
+     * Changes a user's role. Only admins call this (the controller checks). The last admin can't
+     * be demoted, so the back office can never lock itself out.
+     */
+    @Transactional
+    UserSummary changeRole(UUID actorId, UUID userId, Role role) {
+        UserAccount user = users.findById(userId).orElseThrow(UnknownUserException::new);
+        Role before = user.role();
+        if (before == role) {
+            return user.summary();
+        }
+        if (before == Role.ADMIN && users.countByRole(Role.ADMIN) == 1) {
+            throw new RoleChangeRefusedException("Ledgerline needs at least one admin.");
+        }
+        user.changeRole(role);
+        events.publishEvent(new RoleChanged(actorId, userId, before, role));
+        return user.summary();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public UserSummary require(UUID id) {
         return users.findById(id)
                 .map(UserAccount::summary)
@@ -101,6 +154,6 @@ class UserAccounts implements UserDirectory {
     }
 
     private static SignedInUser signedIn(UserAccount account) {
-        return new SignedInUser(account.id(), account.email(), account.displayName());
+        return new SignedInUser(account.id(), account.email(), account.displayName(), account.role());
     }
 }

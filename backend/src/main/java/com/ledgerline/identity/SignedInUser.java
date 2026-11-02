@@ -9,4 +9,4 @@ import java.util.UUID;
  *
  * <p>Public so tests can sign a user in without a password.
  */
-public record SignedInUser(UUID id, String email, String displayName) implements Serializable {}
+public record SignedInUser(UUID id, String email, String displayName, Role role) implements Serializable {}
