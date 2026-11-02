@@ -197,11 +197,10 @@ export const paymentsHandlers = [
 
   http.get(`${API}/verification`, () => HttpResponse.json<Verification>(verification)),
 
-  post('/verification', async ({ request }) => {
-    // The upload's file name, read from the raw multipart body: parsing it as FormData depends on
-    // how the Node version under test streams jsdom's File, which differs between versions.
-    const body = await request.text().catch(() => '');
-    const documentName = /filename="([^"]+)"/.exec(body)?.[1] ?? 'document';
+  post('/verification', () => {
+    // The body isn't read: under newer Node versions, Node's fetch can't stream the jsdom File a
+    // test uploads, and the fake doesn't need its content.
+    const documentName = 'document.pdf';
     verification = {
       status: 'PENDING_REVIEW',
       tier: 'BASIC',
